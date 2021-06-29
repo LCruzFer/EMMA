@@ -5,12 +5,16 @@ import pandas as pd
 wd=Path.cwd()
 data_in=wd.parent/'data'/'in'
 data_out=wd.parent/'data'/'out'
+
 '''
-This file is used for first exploration of the Public Use Microdata from the Consumer Expenditure Survey (CEX).
+This file is used for first exploration of the Public Use Microdata (PUMD) from the Consumer Expenditure Survey (CEX). 
+Steps done: 
+1. explore overlap of household IDs in different quarters
+2. filter list of variables that are in PUMD dictionary for relevant period
 '''
 
 #*####################
-#! DATA
+#! DATA EXPLORATION
 #*####################
 
 #* STEP I: explore NEWID overlap
@@ -32,6 +36,9 @@ share=overlap/len(fmli083)
 #create list of variables that have been part of survey in the relevant period, i.e. 2008 
 #use the PUMD dictionary list of variables, second sheet in file
 pumd_variables=pd.read_excel(data_in/'ce_pumd_interview_diary_dictionary.xlsx', sheet_name=1)
+#if last year is missing variable is still part of survey 
+#replace NaN in 'Last Year' with 2021 so it is not dropped in following steps
+pumd_variables['Last year'][pumd_variables['Last year'].isnull()]=2021
 #only keep variables which have "First Year" either before or in 2008
 relevant_vars=pumd_variables[pumd_variables['First year']<=2008]
 #also filter that last year is at least 2008 or in 2008
@@ -42,9 +49,23 @@ relevant_vars=relevant_vars[(relevant_vars['File']!='FPAR')]
 #also don't need the single imputation iterations but only their average
 #drop all rows that contain 'Imputation Iteration' in their variable description 
 relevant_vars=relevant_vars[~relevant_vars['Variable description'].str.contains('Imputation Iteration')]
-#left with 505 variables
+#also drop all rows that are an "Allocation Number"
+#! what are those?? 
+relevant_vars=relevant_vars[~relevant_vars['Variable description'].str.contains('Allocation Number')]
+print(f'Left with {len(relevant_vars)} variables')
+#also, filter section description to get a df containing only member characteristics and income 
+#drop all rows that do not contain 'characteristics' in their section description 
+relevant_chars=relevant_vars[relevant_vars['Section description'].str.contains('characteristics')]
+#since here only interested in characteristics, let's ignore any variables that contain:
+#'tax', 'income', 'clothing', 'expenditures', 'mortgage', 'expenses', 'food', 'beverages', 'tobacco', 'records', 'mortgage'
+leave_outs=['tax', 'income', 'clothing', 'expenditures', 'mortgage', 'expenses', 'food', 'beverages', 'tobacco', 'records', 'mortgage', 'pay']
+for var in leave_outs:
+    relevant_chars=relevant_chars[~relevant_chars['Variable description'].str.contains(var)]
+print(f'Left with {len(relevant_chars)} variables')
 
 #filter by diary and interview
-interview_relevant=relevant_vars[relevant_vars['Survey']=='INTERVIEW']
-diary_relevant=relevant_vars[relevant_vars['Survey']=='DIARY']
-
+interview_relevant_chars=relevant_chars[relevant_chars['Survey']=='INTERVIEW']
+diary_relevant_chars=relevant_chars[relevant_chars['Survey']=='DIARY']
+#write filtered data to csv 
+interview_relevant_chars.to_csv(data_out/'relevant_chars_interview.csv')
+diary_relevant_chars.to_csv(data_out/'relevant_chars_diary.csv')
