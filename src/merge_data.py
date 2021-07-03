@@ -23,17 +23,15 @@ def adjust_df(df, variables):
     #make sure that df contains NEWID column
     if 'NEWID' not in df.columns: 
         raise KeyError('NEWID not in columns!')
-    #append NEWID to variables
-    variables.append('NEWID')
     #only keep variables
-    df=df[variables]
+    sub_df=df[variables]
     #create id column 
-    df['id']=[int(var/10) for var in df['NEWID']]
+    sub_df['id']=[int(var/10) for var in sub_df['NEWID']]
     #create interview column 
-    df['intrvw']=[int(str(var)[-1]) for var in df['NEWID']]
+    sub_df['intrvw']=[int(str(var)[-1]) for var in sub_df['NEWID']]
     
     #return dataframe 
-    return df
+    return sub_df
 
 #*####################
 #! DATA 
@@ -41,12 +39,26 @@ def adjust_df(df, variables):
 #first merge fmli data 
 files=os.listdir(path=data_in/'2008_rawdata'/'intrvw08')
 fmli=[f for f in files if 'fmli' in f]
-variables='EDUC0REF'
-columns=list(pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli082.csv').columns)+['id', 'intrvw']
+#NEWID and variables that I want
+variables=['EDUC0REF', 'NEWID']
+#columns of final df to which all variables are appended
+columns=['id', 'intrvw']+variables
 final_df=pd.DataFrame(columns=columns)
-for f in files: 
+#load each file, apply adjust_df() function to dataframe and append all into one
+for f in fmli: 
     print(f)
-    df=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/f)
-#    df['NEWID']=df['NEWID'].astype(int)
-    df_adjusted=adjust_df(df, variables)
-    final_df=df_adjusted.append(df_adjusted)
+    #read in file
+    raw=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/f)
+    #apply adjust_df()
+    df_adjusted=adjust_df(raw, variables)
+    #add a column signaling from which file the entry is taken
+    df_adjusted['origin']=f.split('.')[0]
+    #append to final_df
+    final_df=final_df.append(df_adjusted)
+
+#count how often each id appears
+count_df=final_df
+count_df['count']=0
+count_df=final_df[['id', 'count']].groupby(['id']).count()
+#filter for households that appear at least twice 
+twice=count_df[count_df['count']>=2]
