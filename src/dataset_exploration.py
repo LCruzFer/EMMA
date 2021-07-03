@@ -11,6 +11,8 @@ This file is used for first exploration of the Public Use Microdata (PUMD) from 
 Steps done: 
 1. explore overlap of household IDs in different quarters
 2. filter list of variables that are in PUMD dictionary for relevant period
+3. compare differences in releases of same quarter with and without 'x' 
+3. #TODO: once relevant files are clear compare x and non-x file values of those
 '''
 
 #*####################
@@ -69,3 +71,14 @@ diary_relevant_chars=relevant_chars[relevant_chars['Survey']=='DIARY']
 #write filtered data to csv 
 interview_relevant_chars.to_csv(data_out/'relevant_chars_interview.csv')
 diary_relevant_chars.to_csv(data_out/'relevant_chars_diary.csv')
+
+#* STEP III: comparing x and non-x file
+'''
+A x in the file name marks whether the data stems from the release in the actual year (e.g. 081x means that it's the data from the first quarter of interviews in 08 and is released with the 08 data release) or from the previous year release (in this case 081 then from data release of 07 data).
+'''
+#looking at 081/081x data 
+release_07=pd.read_csv(data_in/'intrvw07'/'intrvw07'/'fmli081.csv')
+release_08=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
+#compare IDs, i.e. if same households are included 
+same_ID_share=sum(release_07['NEWID']==release_08['NEWID'])/(len(release_07['NEWID'].append(release_08['NEWID']).drop_duplicates()))
+#!share is 1, so YES, same IDs are included 
