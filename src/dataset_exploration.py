@@ -64,7 +64,11 @@ leave_outs=['tax', 'income', 'clothing', 'expenditures', 'mortgage', 'expenses',
 for var in leave_outs:
     relevant_chars=relevant_chars[~relevant_chars['Variable description'].str.contains(var)]
 print(f'Left with {len(relevant_chars)} variables')
-
+#lastly drop the variables that are already in Misra and Surico dataset
+misra_surico=pd.read_csv(data_in/'Misra_Surico_Data'/'2008_data.csv')
+ms_vars=misra_surico.columns
+for var in ms_vars:
+    relevant_chars=relevant_chars[~(relevant_chars['Variable Name']==var)]
 #filter by diary and interview
 interview_relevant_chars=relevant_chars[relevant_chars['Survey']=='INTERVIEW']
 diary_relevant_chars=relevant_chars[relevant_chars['Survey']=='DIARY']
