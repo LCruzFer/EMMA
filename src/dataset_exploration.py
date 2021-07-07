@@ -12,7 +12,8 @@ Steps done:
 1. explore overlap of household IDs in different quarters
 2. filter list of variables that are in PUMD dictionary for relevant period
 3. compare differences in releases of same quarter with and without 'x' 
-3. #TODO: once relevant files are clear compare x and non-x file values of those
+-> #TODO: once relevant variables are clear compare x and non-x file values of those
+4. compare overlap of MEMI and FMLI files
 '''
 
 #*####################
@@ -86,3 +87,13 @@ release_08=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
 #compare IDs, i.e. if same households are included 
 same_ID_share=sum(release_07['NEWID']==release_08['NEWID'])/(len(release_07['NEWID'].append(release_08['NEWID']).drop_duplicates()))
 #!share is 1, so YES, same IDs are included 
+
+#* STEP IV: comparing MEMI anf FMLI
+#check whether in same quarter MEMI files contian all IDs that are in FMLI
+fmli081=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
+memi081=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'memi081x.csv')
+#get overlap by merging memi on fmli data using newid as merger
+overlapping=pd.merge(fmli081, memi081, on='NEWID', indicator=True, how='left')
+'''
+Difference between FMLI and MEMI: fmli only contains information on the CU in general (or the reference person or it is specified to which person the question referring to in the question) while memi files contain info on the single members of a CU -> can check how many members are recorded in that CU using this data
+'''
