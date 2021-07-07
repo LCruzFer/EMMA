@@ -94,6 +94,3 @@ fmli081=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
 memi081=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'memi081x.csv')
 #get overlap by merging memi on fmli data using newid as merger
 overlapping=pd.merge(fmli081, memi081, on='NEWID', indicator=True, how='left')
-'''
-Difference between FMLI and MEMI: fmli only contains information on the CU in general (or the reference person or it is specified to which person the question referring to in the question) while memi files contain info on the single members of a CU -> can check how many members are recorded in that CU using this data
-'''
