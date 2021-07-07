@@ -77,7 +77,7 @@ diary_relevant_chars.to_csv(data_out/'relevant_chars_diary.csv')
 A x in the file name marks whether the data stems from the release in the actual year (e.g. 081x means that it's the data from the first quarter of interviews in 08 and is released with the 08 data release) or from the previous year release (in this case 081 then from data release of 07 data).
 '''
 #looking at 081/081x data 
-release_07=pd.read_csv(data_in/'intrvw07'/'intrvw07'/'fmli081.csv')
+release_07=pd.read_csv(data_in/'2007_rawdata'/'intrvw07'/'fmli081.csv')
 release_08=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
 #compare IDs, i.e. if same households are included 
 same_ID_share=sum(release_07['NEWID']==release_08['NEWID'])/(len(release_07['NEWID'].append(release_08['NEWID']).drop_duplicates()))
