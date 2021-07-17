@@ -79,6 +79,11 @@ X_w_dummies=X_nocats.merge(dummies_df, on='newid')
 #add constants to observables df
 X_final=X_w_dummies.merge(M, on='newid')
 
+#*Expenditures dataframe 
+#get df with expenditure variables
+expenditures=ms_data[[col for col in ms_data.columns if 'exp' in col]]
+
 #*write to CSV 
 X_final.to_csv(data_out/'transformed'/'MS_observables_dummies.csv')
 R.to_csv(data_out/'transformed'/'MS_rebate_vars.csv')
+expenditures.to_csv(data_out/'transformed'/'expenditures.csv')
