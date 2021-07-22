@@ -47,7 +47,7 @@ def create_dummies(df, id_col):
 #!for now take a look at MS data as they have more variables 
 ms_data=pd.read_csv(data_in/'Misra_Surico_Data'/
                     '2008_data.csv')
-
+ms_data=ms_data.dropna()
 #list of observable characteristics in MS data - see 'MS_columnexplainers.csv' for definitions and notes on this 
 observables=['AGE', 'AGE_REF', 'CKBK_CTX', 'CUTENURE', 'FAM_SIZE', 'FINCBTXM', 'FSALARYM', 'MARITAL1', 'NEWMRRT', 'ORGMRTX', 'QBLNCM1X', 'QESCROWX', 'SAVA_CTX', 'ST_HOUS', 'adults', 'bothtop99pc', 'chadults', 'chchildren', 'children', 'lastadults', 'lastchildren', 'lastage', 'lastrbtamt', 'validAssets', 'validIncome', 'timetrend', 'newid']
 #dummy columns containing indices for time periods
@@ -78,7 +78,8 @@ X_w_dummies=X_nocats.merge(dummies_df, on='newid')
 #*Observables dataframe 
 #add constants to observables df
 X_final=X_w_dummies.merge(M, on='newid')
-
+#!create dummy variable 'married' that is 1 when married and 0 for all other statuses (divorced etc)
+X_final['married']=X_final['MARITAL1']
 #*Expenditures dataframe 
 #get df with expenditure variables
 expenditures=ms_data[[col for col in ms_data.columns if 'exp' in col]]
