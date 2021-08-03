@@ -31,3 +31,15 @@ def drop_exp_rbt(df):
     df=df[[col for col in df.columns if 'reb' not in col]]
     df=df[[col for col in df.columns if 'REB' not in col]]
     return df
+
+def split_XW(Z, x_columns):
+    '''
+    Split all observables into X and W data.
+    *Z=all observables 
+    *x_columns=columns that are supposed to be in X
+    '''
+    #get x data
+    x=Z[x_columns]
+    #then get w data 
+    w=Z[[col for col in Z.columns if col not in x.columns]]
+    return (x, w)
