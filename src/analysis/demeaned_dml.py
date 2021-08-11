@@ -77,7 +77,7 @@ def marginal_effect_at_means(estimator, x_test, var):
     *x_test=test data 
     *var=variable that MEAM should be calculated for 
     '''
-    #get mean X data 
+    #get means of X data 
     means=x_test.mean()
     means_df=x_test.copy() 
     for col in x_test.drop(var, axis=1).columns:
@@ -89,22 +89,34 @@ def marginal_effect_at_means(estimator, x_test, var):
     
     return meam_df
 
+def get_all_meam(model, x_test): 
+    '''
+    Apply marginal_effect_at_means() to all variables in X test set and combine results in dataframe.
+    *model=fitted econML DML model that can calculate constant_marginal_effects
+    *x_test=test set of X variables
+    '''
+    #get columns of test data 
+    x_cols=list(x_test.columns)
+    #calculate MEAM for first variable in X data to create a df on which rest is later merged 
+    meams=marginal_effect_at_means(model, x_test, x_cols[0])
+    #then loop over all variables in x_test and merge the results to meams df 
+    for var in x_cols[1:]: 
+        meam_var=marginal_effect_at_means(model, x_test, var)
+        #only keep point estimate, SE and pvalue
+        meam_var=meam_var[['point_estimate', 'stderr', 'pvalue']].rename(columns={col: col+'_'+var for col in meam_var.columns})
+        meams=meams.merge(meam_var, left_index=True, right_index=True)
+    
+    return meams
+
 #*#########################
 #! DATA
 #*#########################
 #read in demeaned data
-demeaned_vars=pd.read_csv(data_out/'transformed'/'prepped_data_demeaned.csv')
-nan_cols=[]
-for col in demeaned_vars.columns: 
-    nan_series=demeaned_vars[col].isnull()
-    if sum(nan_series)!=0: 
-        print(col)
-        nan_cols.append(col)
-#!some variables have lots of NaN values, need to check this
-#!drop for now 
-demeaned_vars=demeaned_vars.drop(nan_cols, axis=1)
+#demeaned_vars=pd.read_csv(data_out/'transformed'/'prepped_data_demeaned.csv')
+#demeaned data with no missings 
+demeaned_vars=pd.read_csv(data_out/'transformed'/'demeaned_vars_nomissings.csv')
 #choose outcome 
-outcome='RBTAMT'
+outcome='chTOTexp'
 #choose treatment
 treatment='RBTAMT'
 #split into test and train data and then create subset dataframes
@@ -113,6 +125,7 @@ y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(demean
 z_train=utils.drop_exp_rbt(z_train)
 z_test=utils.drop_exp_rbt(z_test)
 
+#*Random Forest hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
 hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
 #rename hyperparams column 
@@ -122,18 +135,21 @@ hyperparams.loc[0, 'R']=int(hyperparams.loc[0, 'R'])
 hyperparams.loc[2, 'R']=int(hyperparams.loc[2, 'R'])
 hyperparams.loc[0, 'Y']=int(hyperparams.loc[0, 'Y'])
 hyperparams.loc[2, 'Y']=int(hyperparams.loc[2, 'Y'])
-
-#*Setup
-#for now consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-x_cols=['AGE', 'FAM_SIZE', 'children', 'FINCBTXM', 'FSALARYM']+['MARITAL1_'+str(num) for num in range(1, 5)]+['SAVA_CTX_'+lit for lit in ['A', 'B', 'C', 'D']]
-#split Z into X and W data
-x_train, w_train=utils.split_XW(Z=z_train, x_columns=x_cols)
-x_test, z_test=utils.split_XW(Z=z_test, x_columns=x_cols)
-
-#*Random Forest hyperparameters
 #turn parameter df into respective parameter dictionaries 
 best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparams['R'])}
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
+
+#*Setup
+#some variables are included twice (once MS transformation, once from CEX)
+#drop one version of them and also some other not useful variables
+#also drop one category dummy per category to avoid multicollinearity
+z_train=z_train.drop(['AGE', 'QINTRVMO', 'QINTRVYR', 'timetrend', 'dropconsumer', 'chtimetrend', 'chage', 'chadults', 'chchildren', 'dropcust', 'MARITAL1_5', 'CKBK_CTX_T', 'SAVA_CTX_T', 'custid', 'timeleft', 'PERSLT18'], axis=1)
+z_test=z_test.drop(['AGE', 'QINTRVMO', 'QINTRVYR', 'timetrend', 'dropconsumer', 'chtimetrend', 'chage', 'chadults', 'chchildren', 'dropcust', 'MARITAL1_5', 'CKBK_CTX_T', 'SAVA_CTX_T', 'custid', 'timeleft', 'PERSLT18'], axis=1)
+#for now consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
+x_cols=['AGE_REF', 'children', 'QESCROWX', 'FSALARYM', 'FINCBTXM', 'adults', 'bothtop99pc', 'top99pc', 'MARITAL1_1']
+#split Z into X and W data
+x_train, w_train=utils.split_XW(Z=z_train, x_columns=x_cols)
+x_test, w_test=utils.split_XW(Z=z_test, x_columns=x_cols)
 
 #*####
 #! Linear DML
@@ -145,31 +161,10 @@ For estimation of g() and f() a regression forest is used (for now - explore oth
 The hyperparameters for the forest are tuned in tune_first_stage.py and contained in 'hyperparams_rf' dataframe
 '''
 #fit linear DML model to train data
-linDML=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R)
+linDML=fit_linDML(y_train, r_train, x_train, z_train, best_params_Y, best_params_R)
 #get constant marginal effect 
 cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
+#get summary dataframe
 cme_df_lin=cme_inf_lin.summary_frame()
-ate_inf_lin=linDML.ate_inference(X=x_test)
-#everythign significant and ATE also significant 
 
 #*Marginal Effect at the Means
-meam_age=marginal_effect_at_means(linDML, x_test, 'AGE')
-meam_children=marginal_effect_at_means(linDML, x_test, 'children')
-
-#*####
-#! Causal Forest DML
-'''
-Here consider DML model with a completely nonparametric specification. To do so use a Causal Forest (Athey and Wager (2016)) that fits following local moment equation: 
-E[(Y_{it} - E[Y_{it}|X_{it}, W_{it}] - \theta(X)*(T - E[T|X, W]) - beta(x)) (T_{it};1) | X_{it}=x] = 0  
-
-For estimation of the first stage use a random forest again with same hyperparameters as with linear DML.
-'''
-#fit causal forest DML to train data 
-cfDML=fit_cfDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R)
-#get constant marginal effect 
-cme_inf_cf=cfDML.const_marginal_effect_inference(X=x_test)
-cme_df_cf=cme_inf_cf.summary_frame()
-
-#*Marginal Effect at the Means
-meam_age=marginal_effect_at_means(cfDML, x_test, 'AGE')
-meam_children=marginal_effect_at_means(cfDML, x_test, 'children')

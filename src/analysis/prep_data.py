@@ -45,14 +45,13 @@ def create_dummies(df, id_col):
     
     return dummy_df
 
-def demean_df(df, idcol):
+def demean_df(df, idcol, ignorecol=None):
     '''
     Demean all observations in df using individual level mean over time. 
     *df=dataframe containing variables to be demeaned
     *idcol=str; signaling id column of df; level of mean
+    *ignorecol=str; ignore this column in demeaning, e.g. variable signaling period
     '''
-    #make id col the index of the dataframe 
-    df=df.set_index(idcol)
     #get mean on idcol level 
     means=df.groupby(idcol).mean()
     #rename columns to column_mean
@@ -63,11 +62,15 @@ def demean_df(df, idcol):
     demeaned_vars=all_vars.copy()
     #df contains original variables we want to demean
     #loop over these columns
-    for col in df.columns: 
+    #ignore the idcol and ignorecol
+    collist=list(df.columns)
+    collist.remove(idcol)
+    collist.remove(ignorecol)
+    for col in collist: 
         #create demeaned version of variable
-        demeaned_vars[col+'_demeaned']=all_vars[col]-all_vars[col+'_mean']
+        demeaned_vars[col]=all_vars[col]-all_vars[col+'_mean']
         #and drop not demeaned variable and mean
-        demeaned_vars=demeaned_vars.drop([col, col+'_mean'], axis=1)
+        demeaned_vars=demeaned_vars.drop([col+'_mean'], axis=1)
     return demeaned_vars
 
 #*#########################
@@ -91,12 +94,38 @@ cats_dummies=create_dummies(cats, 'newid')
 variables=ms_data.drop(categoricals, axis=1)
 variables=variables.merge(cats_dummies, on='newid')
 
-#*Demeaning 
+variables.to_csv(data_out/'transformed'/'nondemeaned_vars.csv')
+
+#*Demeaning Individual Level 
 #for demeaning can ignore all variables that are constants signaling month (const1-const15) as well as timetrend column 
 demean_vars=variables.drop(['const', 'newid', 'interviewno']+['const'+str(i) for i in range(15)], axis=1)
-#apply demean_df() 
-demeaned_vars=demean_df(demean_vars, 'custid')
+#demean based on individual level 
+i_demeaned_vars=demean_df(demean_vars, 'custid', 'timetrend')
+#*Demeaning Time Level
+#now demean based on timetrend 
+it_demeaned_vars=demean_df(i_demeaned_vars, 'timetrend', 'custid')
+#remove timetrend and custid mean columns 
+it_demeaned_vars=it_demeaned_vars.drop(['timetrend_mean', 'custid_mean'], axis=1)
+
+#*Subset with complete data only 
+#some variables contain lots of NaN values in the above derived dataframe 
+#due to NaN values in the original data 
+#find out whether this is due to certain custid having NaN only over all periods or whether this changes
+nan_cols=[]
+for col in it_demeaned_vars.columns: 
+    nan_series=it_demeaned_vars[col].isnull()
+    if sum(nan_series)!=0: 
+        print(col)
+        nan_cols.append(col)
+for cu in it_demeaned_vars['custid'].drop_duplicates(): 
+    cu_df=it_demeaned_vars[it_demeaned_vars['custid']==cu]
+    print(len(cu_df)==sum(cu_df['QESCROWX'].isnull()))
+#pattern clearly shows that his is changing over time 
+sum(it_demeaned_vars['QESCROWX'].isnull())
+#hence, drop all rows in which there is NaN 
+no_missings=it_demeaned_vars.dropna()
 
 #*CSVs 
 #don't write dedicated index column to CSV
-demean_vars.to_csv(data_out/'transformed'/'prepped_data_demeaned.csv', index=False)
+it_demeaned_vars.to_csv(data_out/'transformed'/'prepped_data_demeaned.csv', index=False)
+no_missings.to_csv(data_out/'transformed'/'demeaned_vars_nomissings.csv', index=False)

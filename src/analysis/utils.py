@@ -30,6 +30,7 @@ def drop_exp_rbt(df):
     df=df[[col for col in df.columns if 'rbt' not in col]]
     df=df[[col for col in df.columns if 'reb' not in col]]
     df=df[[col for col in df.columns if 'REB' not in col]]
+    df=df[[col for col in df.columns if 'RBT' not in col]]
     return df
 
 def split_XW(Z, x_columns):
