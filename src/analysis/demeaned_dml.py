@@ -168,3 +168,7 @@ cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
 cme_df_lin=cme_inf_lin.summary_frame()
 
 #*Marginal Effect at the Means
+#apply get_all_meam() to x_test data to get MEAM for all variables 
+meams=get_all_meam(linDML, x_test)
+#write to csv 
+meams.to_csv(data_out/'results'/'MEAMS.csv', index=False)
