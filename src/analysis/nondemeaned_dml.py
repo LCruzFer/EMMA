@@ -113,20 +113,32 @@ def get_all_meam(model, x_test):
 #*#########################
 #! DATA
 #*#########################
-#read in demeaned data
-#demeaned_vars=pd.read_csv(data_out/'transformed'/'prepped_data_demeaned.csv')
-#demeaned data with no missings 
-demeaned_vars=pd.read_csv(data_out/'transformed'/'demeaned_vars_nomissings.csv')
+#read in data
+variables=pd.read_csv(data_out/'transformed'/'nondemeaned_vars.csv')
+variables=variables.drop('Unnamed: 0', axis=1)
+variables=variables.replace(np.nan, 0)
 #choose outcome 
 outcome='chTOTexp'
 #choose treatment
 treatment='RBTAMT'
 #split into test and train data and then create subset dataframes
-y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(demeaned_vars, outcome, treatment, n_test=1000)
+y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(variables, outcome, treatment, n_test=1000)
 #drop all other expenditure and rebate variables from Z data 
 z_train=utils.drop_exp_rbt(z_train)
 z_test=utils.drop_exp_rbt(z_test)
-
+#drop some more variables not needed in DML (IDs etc)
+z_train=z_train.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE', 
+                    'dropcust', 'CKBK_CTX_T', 'SAVA_CTX_T', 
+                    'MARITAL1_5', 'const14', 'dropconsumer', 
+                    'nmort', 'QINTRVMO', 'QINTRVYR', 
+                    'lastage', 'lastadults', 'lastchildren', 
+                    'lasttimetrend'], axis=1)
+z_test=z_test.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE', 
+                    'dropcust', 'CKBK_CTX_T', 'SAVA_CTX_T', 
+                    'MARITAL1_5', 'const14', 'dropconsumer', 
+                    'nmort', 'QINTRVMO', 'QINTRVYR', 
+                    'lastage', 'lastadults', 'lastchildren', 
+                    'lasttimetrend'], axis=1)
 #*Random Forest hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
 hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
@@ -142,11 +154,6 @@ best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparam
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
 
 #*Setup
-#some variables are included twice (once MS transformation, once from CEX)
-#drop one version of them and also some other not useful variables
-#also drop one category dummy per category to avoid multicollinearity
-z_train=z_train.drop(['AGE', 'QINTRVMO', 'QINTRVYR', 'timetrend', 'dropconsumer', 'chtimetrend', 'chage', 'chadults', 'chchildren', 'dropcust', 'MARITAL1_5', 'CKBK_CTX_T', 'SAVA_CTX_T', 'custid', 'timeleft', 'PERSLT18'], axis=1)
-z_test=z_test.drop(['AGE', 'QINTRVMO', 'QINTRVYR', 'timetrend', 'dropconsumer', 'chtimetrend', 'chage', 'chadults', 'chchildren', 'dropcust', 'MARITAL1_5', 'CKBK_CTX_T', 'SAVA_CTX_T', 'custid', 'timeleft', 'PERSLT18'], axis=1)
 #for now consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
 x_cols=['AGE_REF', 'children', 'QESCROWX', 'FSALARYM', 'FINCBTXM', 'adults', 'bothtop99pc', 'top99pc', 'MARITAL1_1']
 #split Z into X and W data
