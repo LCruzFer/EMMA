@@ -94,18 +94,19 @@ cats_dummies=create_dummies(cats, 'newid')
 variables=ms_data.drop(categoricals, axis=1)
 variables=variables.merge(cats_dummies, on='newid')
 
-variables.to_csv(data_out/'transformed'/'nondemeaned_vars.csv')
+variables.to_csv(data_out/'transformed'/'nondemeaned_vars.csv', index=False)
 
 #*Demeaning Individual Level 
 #for demeaning can ignore all variables that are constants signaling month (const1-const15) as well as timetrend column 
 demean_vars=variables.drop(['const', 'newid', 'interviewno']+['const'+str(i) for i in range(15)], axis=1)
+#!UNNECESSARY as dependent variable is first difference (change in consumption)
 #demean based on individual level 
-i_demeaned_vars=demean_df(demean_vars, 'custid', 'timetrend')
+#i_demeaned_vars=demean_df(demean_vars, 'custid', 'timetrend')
 #*Demeaning Time Level
 #now demean based on timetrend 
-it_demeaned_vars=demean_df(i_demeaned_vars, 'timetrend', 'custid')
+it_demeaned_vars=demean_df(demean_vars, 'timetrend', 'custid')
 #remove timetrend and custid mean columns 
-it_demeaned_vars=it_demeaned_vars.drop(['timetrend_mean', 'custid_mean'], axis=1)
+it_demeaned_vars=it_demeaned_vars.drop(['custid_mean'], axis=1)
 
 #*Subset with complete data only 
 #some variables contain lots of NaN values in the above derived dataframe 
@@ -115,11 +116,9 @@ nan_cols=[]
 for col in it_demeaned_vars.columns: 
     nan_series=it_demeaned_vars[col].isnull()
     if sum(nan_series)!=0: 
-        print(col)
         nan_cols.append(col)
 for cu in it_demeaned_vars['custid'].drop_duplicates(): 
     cu_df=it_demeaned_vars[it_demeaned_vars['custid']==cu]
-    print(len(cu_df)==sum(cu_df['QESCROWX'].isnull()))
 #pattern clearly shows that his is changing over time 
 sum(it_demeaned_vars['QESCROWX'].isnull())
 #hence, drop all rows in which there is NaN 
