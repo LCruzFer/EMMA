@@ -1,0 +1,26 @@
+\section*{Methodology}
+To detect heterogeneity in the MPC I apply the Double/Debiased Machine Learning method (DML) developed by Chernozhukov et al. (2016). This approach is also known as Orthogonalized Machine Learning as it relies on the idea of orthogonalizing the dependent variable and the treatment/variable of interest to establish the causal relationship between the two. More precisely, I model the relationship between treatment and outcome with a Partially Linear Model (PLM): 
+\begin{align}
+    \Delta C_{it}&=\theta(X_{it})R_{it}+g(X_{it}, W_{it})+\epsilon_{it} \\
+    R_{it}&=h(X_{it}, W_{it})+u_{it}
+\end{align}
+This semi-parametric model allows to define the following equation: 
+\begin{align}
+    \Delta C_{it}-E[\Delta C_{it}|X_{it}, W_{it}]=\theta(X_{it})(R_{it}-E[R_{it}|X_{it}, W_{it}])+\epsilon_{it}
+\end{align}
+where we know that 
+\begin{align}
+    E[R_{it}|X_{it}, W_{it}]&=h(X_{it}, W_{it}) \\
+    E[\Delta C_{it}|X_{it}, W_{it}]&=f(X_{it}, W_{it})
+\end{align}
+These two conditional expected values can be estimated using any machine learning method of choice and then used to calculate the respective residuals
+\begin{align}
+    \tilde{Y}_{it}&=Y_{it}-\hat{f}(X_{it}, W_{it})\\
+    \tilde{R}_{it}&=R_{it}-\hat{h}(X_{it}, W_{it})
+\end{align}
+This orthogonalization removes any variation in the treatment and outcome that stems from any of the observed confounders. Hence, regressing $\tilde{Y}_{it}$ on $\tilde{R}_{it}$ shows the effect of the treatment on the outcome without any interference from confounders, which allows to identify the causal effect from the treatment on the outcome. \\
+In my setting the treatment - i.e. the amount of rebate received - depends heavily on observables such as the number of children because they determined the rebate amount directly. However, what is not observed is the individual's net-tax liability which determined the base size of the rebate a household received. This varies on the individual level and generates exogenous variation in the treatment. Additionally, the timing of the rebate was naturally randomized as checks were sent out based on the ending digits of individuals social security number, which is randomly generated. These two sources of exogenous variation allow to identify the causal relationship between rebate amount and change in consumption. \\
+
+\subsection*{Panel Structure}
+The original DML approach is only valid for estimating cross-sectional data, i.e. under the assumption that $(X_{i}, W_{i}, Y_{i})$ are iid. However, in the setting at hand this is not case as I have a panel structure. In the traditional fixed effects setting all observations are demeaned by the individual level mean to remove the fixed effect and then OLS is run on the residuals, which are iid. Hence, in theory when data is pre-processed in the correct manner, the observations in my setting are iid as well and the DML approach will work fine. \\
+One advantage is that the dependent variable is the change in consumption, hence any individual level fixed effects that influence consumption are removed and do not have to be accounted for. Additionally, the data is driven by seasonality. Adjusting for that gets more tricky. \\
