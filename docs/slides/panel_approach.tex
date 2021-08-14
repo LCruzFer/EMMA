@@ -1,0 +1,80 @@
+\documentclass[a4paper, 12pt]{beamer}
+
+%color theme 
+\beamertemplatenavigationsymbolsempty
+\usetheme{metropolis}
+
+
+\defbeamertemplate*{footline}{shadow theme}
+{%
+  \leavevmode%
+   \hbox{\begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}%
+  \usebeamerfont{author in head/foot}\insertframenumber\hfill\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle%
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{appendixnumberbeamer}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{cancel}
+
+\title{Panel DML approach}
+\author{}
+\date{}
+
+\begin{document}
+\begin{frame}{Model}
+\begin{itemize}
+    \item in general I want to estimate something like
+    \begin{align*}
+        \Delta C_{it}&=\theta(X_{it})R_{it} + g(X_{it}, W_{it}) + \epsilon_{it} \\
+        R_{it}&=h(X_{it}, W_{it}) + u_{it}
+    \end{align*}
+    \item individual level fixed effect is NOT necessary because looking at first difference of $C_{it}$ 
+    \item what about seasonality?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Seasonality}
+\begin{itemize}
+    \item in linear model use dummies or demean by period averages 
+    \item demeaning approach not valid in semi-parametric approach because this
+    \begin{align}\label{eq:eq1}
+        \Delta C_{it}-\frac{1}{N}\sum_{i=1}^{N}\Delta C_{it}&=\theta(X_{it})R_ {it}-\frac{1}{N}\sum_{i=1}^{N}\theta(X_{it})R_{it} \nonumber \\ 
+        &+g(X_{it}, W_{it})-\frac{1}{N}\sum_{i=1}^{N}g(X_{it}, W_{it}) \\
+        &+\epsilon_{it} \nonumber
+    \end{align}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Seasonality}
+\begin{itemize}
+    \item is not feasible: unnecessarily hard to interpret and estimate - inference results no longer valid because I would have to adjust the whole estimator (and thus covariance matrix)
+    \item however, just demeaning data results in 
+    \begin{align*}
+        \Delta \hat{C}_{it}&=\theta(\hat{X}_{it})\hat{R}_{it} + g(\hat{X}_{it}, \hat{W}_{it}) + \epsilon_{it} \\
+        \hat{R}_{it}&=h(\hat{X}_{it}, \hat{W}_{it}) + u_{it}        
+    \end{align*}
+    \item where $\hat{X}=X_{it}-\frac{1}{N}\sum_{t=1}^{N}X_{it}$
+    \item which is only equal to (\ref{eq:eq1}) if $g(\cdot, \cdot)$ and $h(\cdot, \cdot)$ are linear and $\theta$ doesn't depend on $X_{it}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Seasonality}
+\begin{itemize}
+    \item for individual level fixed effects econML docs suggest to simply throw the OneHotEconded dummies into the estimator 
+    \item is this a feasible option for the monthly dummies, too? After all, why shouldn't it be?
+    \item when throwing them in actually also able to catch interactions between month and observables - maybe having children plays a larger role in winter etc...
+\end{itemize}
+\end{frame}
+
+\end{document}
