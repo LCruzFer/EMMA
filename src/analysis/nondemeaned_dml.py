@@ -132,13 +132,14 @@ z_train=z_train.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE',
                     'MARITAL1_5', 'const14', 'dropconsumer', 
                     'nmort', 'QINTRVMO', 'QINTRVYR', 
                     'lastage', 'lastadults', 'lastchildren', 
-                    'lasttimetrend'], axis=1)
+                    'lasttimetrend', 'const'], axis=1)
 z_test=z_test.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE', 
                     'dropcust', 'CKBK_CTX_T', 'SAVA_CTX_T', 
                     'MARITAL1_5', 'const14', 'dropconsumer', 
                     'nmort', 'QINTRVMO', 'QINTRVYR', 
                     'lastage', 'lastadults', 'lastchildren', 
-                    'lasttimetrend'], axis=1)
+                    'lasttimetrend', 'const'], axis=1)
+
 #*Random Forest hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
 hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
@@ -163,7 +164,6 @@ x_test, w_test=utils.split_XW(Z=z_test, x_columns=x_cols)
 #*#########################
 #! LINEAR DML
 #*#########################
-
 '''
 Here consider DML model with semi-parametric specification: 
 Y_{it}=\theta*R_{it} + g(X_{it}, W_{it}) + U_{it}
@@ -177,7 +177,7 @@ linDML=fit_linDML(y_train, r_train, x_train, z_train, best_params_Y, best_params
 cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
 #get summary dataframe
 cme_df_lin=cme_inf_lin.summary_frame()
-
+cme_df_lin[cme_df_lin['pvalue']<=0.1]
 #write to csv
 cme_df_lin.to_csv(data_out/'results'/'CME.csv')
 #*Marginal Effect at the Means
