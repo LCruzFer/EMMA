@@ -13,7 +13,7 @@ data_in=wd.parents[1]/'data'/'in'
 data_out=wd.parents[1]/'data'/'out'
 
 '''
-This file estimates various DML models using demeaned data.
+This file estimates various DML models.
 '''
 
 #*#########################
@@ -117,6 +117,20 @@ def get_all_meam(model, x_test):
 variables=pd.read_csv(data_out/'transformed'/'nondemeaned_vars.csv')
 variables=variables.drop('Unnamed: 0', axis=1)
 variables=variables.replace(np.nan, 0)
+
+#* Random Forest Hyperparameters
+#read in hyperparameters for RF - output from tune_first_stage.py
+hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
+#rename hyperparams column 
+hyperparams=hyperparams.rename(columns={'Unnamed: 0': 'param'})
+#need to turn some entries into integers that are read in str 
+hyperparams.loc[0, 'R']=int(hyperparams.loc[0, 'R'])
+hyperparams.loc[2, 'R']=int(hyperparams.loc[2, 'R'])
+hyperparams.loc[0, 'Y']=int(hyperparams.loc[0, 'Y'])
+hyperparams.loc[2, 'Y']=int(hyperparams.loc[2, 'Y'])
+#turn parameter df into respective parameter dictionaries 
+best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparams['R'])}
+best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
 #choose outcome 
 outcome='chTOTexp'
 #choose treatment
@@ -127,6 +141,7 @@ y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(variab
 z_train=utils.drop_exp_rbt(z_train)
 z_test=utils.drop_exp_rbt(z_test)
 #drop some more variables not needed in DML (IDs etc)
+#!shift some of this to prep_data
 z_train=z_train.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE', 
                     'dropcust', 'CKBK_CTX_T', 'SAVA_CTX_T', 
                     'MARITAL1_5', 'const14', 'dropconsumer', 
@@ -140,23 +155,11 @@ z_test=z_test.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE',
                     'lastage', 'lastadults', 'lastchildren', 
                     'lasttimetrend', 'const'], axis=1)
 
-#*Random Forest hyperparameters
-#read in hyperparameters for RF - output from tune_first_stage.py
-hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
-#rename hyperparams column 
-hyperparams=hyperparams.rename(columns={'Unnamed: 0': 'param'})
-#need to turn some entries into integers that are read in str 
-hyperparams.loc[0, 'R']=int(hyperparams.loc[0, 'R'])
-hyperparams.loc[2, 'R']=int(hyperparams.loc[2, 'R'])
-hyperparams.loc[0, 'Y']=int(hyperparams.loc[0, 'Y'])
-hyperparams.loc[2, 'Y']=int(hyperparams.loc[2, 'Y'])
-#turn parameter df into respective parameter dictionaries 
-best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparams['R'])}
-best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
-
 #*Setup
 #for now consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-x_cols=['AGE_REF', 'children', 'QESCROWX', 'FSALARYM', 'FINCBTXM', 'adults', 'bothtop99pc', 'top99pc', 'MARITAL1_1']
+x_cols=['AGE_REF', 'children', 'QESCROWX', 'FSALARYM', 'FINCBTXM', 'adults', 'top99pc', 'bothtop99pc', 'MARITAL1_1', 'CUTENURE', 'validIncome', 
+'validAssets', 'payment', 'CKBK_CTX_A']
+
 #split Z into X and W data
 x_train, w_train=utils.split_XW(Z=z_train, x_columns=x_cols)
 x_test, w_test=utils.split_XW(Z=z_test, x_columns=x_cols)
@@ -178,10 +181,18 @@ cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
 #get summary dataframe
 cme_df_lin=cme_inf_lin.summary_frame()
 cme_df_lin[cme_df_lin['pvalue']<=0.1]
+
 #write to csv
-cme_df_lin.to_csv(data_out/'results'/'CME.csv')
+filename='CME_'+treatment+'.csv'
+cme_df_lin.to_csv(data_out/'results'/filename)
+
 #*Marginal Effect at the Means
 #apply get_all_meam() to x_test data to get MEAM for all variables 
 meams=get_all_meam(linDML, x_test)
+for col in x_train.columns: 
+    sig=meams[meams['pvalue'+'_'+col]<=0.1]
+    print(f'{col}: {len(sig)}')
+
 #write to csv 
-meams.to_csv(data_out/'results'/'MEAMS.csv', index=False)
+filename_meam='MEAMS_'+treatment+'.csv'
+meams.to_csv(data_out/'results'/filename_meam, index=False)
