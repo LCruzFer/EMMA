@@ -11,10 +11,9 @@ This file prepares 'raw' data and creates CSVs containing the prepped data - one
 Steps taken: 
 - turn categoricals into dummies via OneHotEncoding
 - demean all observations by their time mean on individual level 
--  ???
 '''
 #*#########################
-#! DATA
+#! FUNCTIONS
 #*#########################
 def reorder_df(columns, df): 
     '''
