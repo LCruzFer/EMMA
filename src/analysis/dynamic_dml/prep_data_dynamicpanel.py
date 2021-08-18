@@ -42,32 +42,3 @@ lvls_characteristics=only_lvls.drop(['nmort', 'RESPSTAT', 'timetrend',
                                     'dropcust', 'timeleft', 'const'] 
                                     +['const'+str(i) for i in range(15)], 
                                     axis=1)
-
-#* Panel Set 
-#for dynamic DML need a balanced panel 
-#keep only those in 2008
-lvls_08=lvls_characteristics[lvls_characteristics['year']==2008]
-#count how often each unit is observed 
-obs_count=lvls_08[['custid', 'interviewno']].groupby(['custid']).count().rename(columns={'interviewno': 'count'})
-#merge back onto lvls data and keep only those that have count=3
-lvls_counts=lvls_08.merge(obs_count, on='custid')
-lvls_count3_08=lvls_counts[lvls_counts['count']==3]
-
-#* TESTING AREA RIGHT NOW
-lvls_count3_08=lvls_count3_08.drop(['maritalstat', 'totbalance_ca', 'totbalance_sa'], axis=1)
-lvls_count3_08=lvls_count3_08.replace(np.nan, 0)
-y_train, y_test, t_train, t_test, z_train, z_test=du().create_test_train(lvls_count3_08, 'custid', 'TOTexp', 'RBTAMT', n_test=500)
-x_train=z_train[['AGE', 'adults']]
-x_test=z_test[['AGE', 'adults']]
-w_train=z_train.drop(['AGE', 'adults'], axis=1)
-w_test=z_test.drop(['AGE', 'adults'], axis=1)
-
-n_panel=len(z_train['custid'].drop_duplicates())
-n_periods=3
-groups=np.repeat(a=np.arange(n_panel), repeats=n_periods, axis=0)
-from econml.dynamic.dml import DynamicDML
-from sklearn.ensemble import RandomForestRegressor as RFR
-dyndml=DynamicDML(model_y=RFR(), model_t=RFR())
-dyndml.fit(Y=y_train, T=t_train, X=x_train, W=w_train, groups=groups)
-cme_inf=dyndml.const_marginal_effect_inference(X=x_test)
-cme_inf_df=cme_inf.summary_frame()
