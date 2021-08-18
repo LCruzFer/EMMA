@@ -1,16 +1,18 @@
+import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
 from econml.dml import LinearDML, CausalForestDML
 from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.model_selection import GridSearchCV, train_test_split
-import utils
 import itertools
-
-#* set paths 
+#* set system path to import utils
 wd=Path.cwd()
-data_in=wd.parents[1]/'data'/'in'
-data_out=wd.parents[1]/'data'/'out'
+sys.path.append(str(wd.parent))
+from utils import utils
+#* set data paths
+data_in=wd.parents[2]/'data'/'in'
+data_out=wd.parents[2]/'data'/'out'
 
 '''
 This file estimates various DML models.
@@ -110,6 +112,32 @@ def get_all_meam(model, x_test):
     
     return meams
 
+def cross_fitting_folds(data, K, T, t_col): 
+    '''
+    Generate the cross-fitting folds from Chernozhukov et al. (2021) as a list of (train, test) indices. For K folds generate K pairs where each fold is test once and rest are train.
+    *data=pandas dataframe containing all data 
+    *K=number of folds 
+    *T=number of periods 
+    *t_col=column in data signaling period of observation
+    '''
+    #set up final list of folds 
+    folds=[]
+    #then for each fold 
+    for k in range(1, K+1):
+        #get upper and lower limit of time index 
+        lower=np.floor(T*(k-1)/K)
+        upper=np.floor(T*k/K)
+        print(lower, upper)
+        #then check which observations have lower<=t<=upper
+        in_k_bools=(lower<=data[t_col])&(data[t_col]<=upper)
+        #then get the corresponding indices 
+        in_k_indices=data[in_k_bools].index
+        #and oppposite of those 
+        not_k_indices=data[in_k_bools==False].index
+        #bind in tuple and add to fold list 
+        folds.append((in_k_indices, not_k_indices))
+    return folds
+
 #*#########################
 #! DATA
 #*#########################
@@ -136,10 +164,10 @@ outcome='chTOTexp'
 #choose treatment
 treatment='RBTAMT'
 #split into test and train data and then create subset dataframes
-y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(variables, outcome, treatment, n_test=1000)
+y_train, y_test, r_train, r_test, z_train, z_test=utils().create_test_train(variables, outcome, treatment, n_test=1000)
 #drop all other expenditure and rebate variables from Z data 
-z_train=utils.drop_exp_rbt(z_train)
-z_test=utils.drop_exp_rbt(z_test)
+z_train=utils().drop_exp_rbt(z_train)
+z_test=utils().drop_exp_rbt(z_test)
 #drop some more variables not needed in DML (IDs etc)
 #!shift some of this to prep_data
 z_train=z_train.drop(['custid', 'interviewno', 'newid', 'PERSLT18', 'AGE', 
@@ -161,8 +189,8 @@ x_cols=['AGE_REF', 'children', 'QESCROWX', 'FSALARYM', 'FINCBTXM', 'adults', 'to
 'validAssets', 'payment', 'CKBK_CTX_A']
 
 #split Z into X and W data
-x_train, w_train=utils.split_XW(Z=z_train, x_columns=x_cols)
-x_test, w_test=utils.split_XW(Z=z_test, x_columns=x_cols)
+x_train, w_train=utils().split_XW(Z=z_train, x_columns=x_cols)
+x_test, w_test=utils().split_XW(Z=z_test, x_columns=x_cols)
 
 #*#########################
 #! LINEAR DML
@@ -174,6 +202,9 @@ R_{it}=f(X_{it}, W_{it}) + V_{it}
 For estimation of g() and f() a regression forest is used (for now - explore other options later on) 
 The hyperparameters for the forest are tuned in tune_first_stage.py and contained in 'hyperparams_rf' dataframe
 '''
+#only difference between Chernozhukov et al (2021) and Chernozhukov et al (2016) is the manner of cross-fitting in the first stage
+#need an iterable formed by [(train, test)] where train and test show indices of observations that are supposed to got into test and train when doing cross-fitting
+
 #fit linear DML model to train data
 linDML=fit_linDML(y_train, r_train, x_train, z_train, best_params_Y, best_params_R)
 #get constant marginal effect 
