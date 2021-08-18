@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np 
 from sklearn.model_selection import train_test_split 
 
 '''
@@ -36,20 +37,25 @@ class utils:
         df=self.df[[col for col in self.df.columns if 'RBT' not in col]]
         return df
 
-    
-    def create_test_train(self, outcome, treatment, n_test=2000):
+    def create_test_train(self, data, idcol, outcome, treatment, n_test=2000):
         '''
-        Create single datasets for outcome, treatment and controls - train and test sets respectively.
-        *data=self.df with all data 
+        Create single datasets for outcome, treatment and controls - train and test sets respectively. Households are either part of train or test set, not both.
+        *data=df with all data 
+        *idcol=column containing id of units 
         *outcome=str that is column name of outcome
         *treatment=str that is column name of treatment
         '''
-        #!change this to split based on id, such that households are either in training or test set, not in both
-        train, test=train_test_split(self.df, test_size=n_test, random_state=2021)
+        #get IDs and draw n_test randomly from them 
+        test_ids=np.random.choice(data[idcol], size=n_test, replace=False)
+        #get observations for test & train set 
+        test=data[data[idcol].isin(test_ids)]
+        train=data[data[idcol].isin(test_ids)==False]
+        #then split into different sets for outcome, treatment and confounders
         y_train=train[outcome]
         y_test=test[outcome]
         t_train=train[treatment]
         t_test=test[treatment]
+        #remove all rebate or expenditure related variables from confounders data
         z_train=self.drop_exp_rbt(train[[col for col in train.columns if col not in [outcome, treatment]]])
         z_test=self.drop_exp_rbt(test[[col for col in train.columns if col not in [outcome, treatment]]])
         return y_train, y_test, t_train, t_test, z_train, z_test
