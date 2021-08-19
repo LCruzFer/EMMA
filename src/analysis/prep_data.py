@@ -116,4 +116,4 @@ cleaned=cleaned.drop(categoricals, axis=1)
 cleaned_w_dummies=cleaned.merge(cats_dummies, on='newid')
 
 #write this version to CSV
-cleaned_w_dummies.to_csv(data_out/'transformed'/'cleaned_dummies.csv')
+cleaned_w_dummies.to_csv(data_out/'transformed'/'cleaned_dummies.csv', index=False)
