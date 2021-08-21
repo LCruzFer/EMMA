@@ -115,5 +115,24 @@ cats_dummies=create_dummies(cats, 'newid')
 cleaned=cleaned.drop(categoricals, axis=1)
 cleaned_w_dummies=cleaned.merge(cats_dummies, on='newid')
 
+#* Create quarter identifier 
+#t dimension is quarter 
+#need a running count from first quarter in data to last one 
+cleaned_w_dummies['quarter']=1
+for i in range(len(cleaned_w_dummies)): 
+    year=cleaned_w_dummies.loc[i, 'year']
+    month=cleaned_w_dummies.loc[i, 'month']
+    if year==2008:
+        if month in [1, 2, 3]: 
+            cleaned_w_dummies.loc[i, 'quarter']=2
+        elif month in [4, 5, 6]: 
+            cleaned_w_dummies.loc[i, 'quarter']=3
+        elif month in [7, 8, 9]: 
+            cleaned_w_dummies.loc[i, 'quarter']=4
+        elif month in [10, 11, 12]: 
+            cleaned_w_dummies.loc[i, 'quarter']=5
+    elif year==2009: 
+        cleaned_w_dummies.loc[i, 'quarter']=6
+
 #write this version to CSV
 cleaned_w_dummies.to_csv(data_out/'transformed'/'cleaned_dummies.csv', index=False)

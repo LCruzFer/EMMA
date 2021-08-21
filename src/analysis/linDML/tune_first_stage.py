@@ -1,14 +1,17 @@
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd 
 from sklearn.ensemble import RandomForestRegressor as RFR 
 from sklearn.model_selection import GridSearchCV
-import utils
-
-#* set paths 
+#* set path to import utils 
 wd=Path.cwd()
-data_in=wd.parents[1]/'data'/'in'
-data_out=wd.parents[1]/'data'/'out'
+sys.path.append(str(wd.parent))
+from utils import data_utils as du
+
+#* get data paths
+data_in=wd.parents[2]/'data'/'in'
+data_out=wd.parents[2]/'data'/'out'
 
 '''
 In this file tune the hyperparameters of the first stage (Random Forest so far). This is done outside of the estimation file as takes up quite some time and (in theory) only has to be done once. The results are saved in a dataframe and then exported to a CSV so they can be used in the estimation procedure. 
@@ -17,6 +20,22 @@ In this file tune the hyperparameters of the first stage (Random Forest so far).
 #*#########################
 #! FUNCTIONS
 #*#########################
+def prep_tune_data(df, outcome, treatment, n_test): 
+    '''
+    Use various utils.data_utils() functions to prepare data for hyperparameter tuning.
+    *df=pandas DataFrame containing data 
+    *outcome=str with col name of outcome 
+    *treatment=str with col name of treatment
+    *n_test=int size of test set
+    '''
+    #split into test and train data 
+    y_train, y_test, t_train, t_test, z_train, z_test=du().create_test_train(variables, 'custid', outcome, treatment, n_test=n_test)
+    #drop all rebate and expenditure variables that are not treatment or outcome from z_train and z_test
+    z_test=du().drop_exp_rbt(z_test)
+    z_train=du().drop_exp_rbt(z_train)
+
+    return y_train, y_test, t_train, t_test, z_train, z_test
+
 def tune_rf(params, X, Y):
     '''
     Tune a random forest using sklearn's GridSearchCV function using the supplied parameters dictionary and data. Return the optimal parameters.
@@ -39,22 +58,17 @@ def tune_rf(params, X, Y):
 #*#########################
 #! DATA
 #*#########################
-#read in demeaned data
-demeaned_vars=pd.read_csv(data_out/'transformed'/'prepped_data_demeaned.csv')
+variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
+#! what to do about all the NaN? 
+variables=variables.replace(np.nan, 0)
+#choose how many observations in test set
+n_test=1000
+#choose treatment 
+treatment='RBTAMT'
 #choose outcome 
 outcome='chTOTexp'
-#choose treatment
-treatment='RBTAMT'
-#split into test and train data and then create subset dataframes
-y_train, y_test, r_train, r_test, z_train, z_test=utils.create_test_train(demeaned_vars, outcome, treatment)
-#drop all other expenditure and rebate variables from Z data 
-z_train=utils.drop_exp_rbt(z_train)
-z_test=utils.drop_exp_rbt(z_test)
-
-#some columns have lots of NaN Z - drop for now and 
-#!INVESTIGATE LATER ON 
-z_train=z_train.drop(['QESCROWX', 'QBLNCM1X', 'ORGMRTX', 'nmort', 'timeleft', 'NEWMRRT', 'QMRTTERM', 'payment'], axis=1) 
-z_test=z_test.drop(['QESCROWX', 'QBLNCM1X', 'ORGMRTX', 'nmort', 'timeleft', 'NEWMRRT', 'QMRTTERM', 'payment'], axis=1)
+#split and prepare 
+y_train, y_test, r_train, r_test, z_train, z_test=prep_tune_data(variables, outcome, treatment, 1000)
 
 #*#########################
 #! RF TUNING
