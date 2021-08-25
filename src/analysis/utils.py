@@ -45,6 +45,8 @@ class data_utils:
         *outcome=str that is column name of outcome
         *treatment=str that is column name of treatment
         '''
+        #set seed for replication 
+        np.random.seed(2021)
         #get IDs and draw n_test randomly from them 
         test_ids=np.random.choice(data[idcol], size=n_test, replace=False)
         #get observations for test & train set 
