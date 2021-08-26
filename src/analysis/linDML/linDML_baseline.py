@@ -1,3 +1,4 @@
+import time
 import sys
 from pathlib import Path
 import pandas as pd
@@ -17,7 +18,7 @@ data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
 
 '''
-This file estimates various DML models.
+This file estimates the baseline linear DML model.
 '''
 
 #*#########################
@@ -35,7 +36,13 @@ def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds, n_
     *n_test=size of test set
     '''
     #initialize DML model with tuned parameters
-    linDML=LinearDML(model_y=RFR(max_depth=params_Y['max_depth'], min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), model_t=RFR(max_depth=params_T['max_depth'], min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), cv=folds)
+    linDML=LinearDML(model_y=RFR(max_depth=params_Y['max_depth'],       
+                                min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                    model_t=RFR(max_depth=params_T['max_depth'],    
+                                min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                    cv=folds, fit_cate_intercept=False, 
+                    random_state=2021
+                    )
     print('Model set up!')
     #fit to train data 
     linDML.fit(y_train, t_train, X=x_train, W=w_train)
@@ -46,8 +53,39 @@ def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds, n_
 #! DATA
 #*#########################
 #read in data
-variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
-variables=variables.replace(np.nan, 0)
+#variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
+#variables=variables.replace(np.nan, 0)
+#panel structure data 
+variables=pd.read_csv(data_out/'transformed'/'panel_w_lags.csv')
+print('Variables loaded')
+
+#* Data Preparation
+#choose outcome 
+outcome='chTOTexp'
+#choose treatment
+treatment='RBTAMT'
+#set index to newid 
+#split into test and train data and then create subset dataframes
+y_train, y_test, r_train, r_test, z_train, z_test=du().create_test_train(variables, 'custid', outcome, treatment, n_test=500)
+#drop change variables from confounders
+z_train=z_train.drop([col for col in z_train.columns if 'ch' in col], axis=1)
+z_test=z_test.drop([col for col in z_test.columns if 'ch' in col], axis=1)
+#merge children back onto Z datasets
+z_train=z_train.merge(variables[['newid', 'children']], on='newid')
+z_test=z_test.merge(variables[['newid', 'children']], on='newid')
+#merge lags of treatment and rebate back on Z data 
+z_train=z_train.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
+z_test=z_test.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
+#consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
+x_cols=['AGE', 'children', 'fam_salary_inc', 'tot_fam_inc',
+        'adults', 'bothtop99pc', 'payment', 'married', 'owned_nm', 'owned_m']
+#split Z into X and W data
+x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
+x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
+#drop id variables from w data 
+w_train=w_train.drop(['custid', 'year'], axis=1)
+w_test=w_test.drop(['custid', 'year'], axis=1)
+print('Data is ready!')
 
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
@@ -62,29 +100,10 @@ hyperparams.loc[2, 'Y']=int(hyperparams.loc[2, 'Y'])
 #turn parameter df into respective parameter dictionaries 
 best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparams['R'])}
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
-
-#*Setup
-#choose outcome 
-outcome='chTOTexp'
-#choose treatment
-treatment='RBTAMT'
-#set index to newid 
-#split into test and train data and then create subset dataframes
-y_train, y_test, r_train, r_test, z_train, z_test=du().create_test_train(variables, 'custid', outcome, treatment, n_test=500)
-#for now consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-x_cols=['AGE', 'children', 'QESCROWX', 'fam_salary_inc', 'tot_fam_inc',
-        'adults', 'top99pc', 'bothtop99pc', 'CUTENURE', 'validIncome', 
-        'validAssets', 'payment']+['maritalstat_'+str(num) for num in range(1, 5)]+['totbalance_ca_'+ let for let in ['A', 'B', 'C', 'D']]
-#split Z into X and W data
-x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
-x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
-#drop id variables from w data 
-w_train=w_train.drop(['custid', 'year'], axis=1)
-w_test=w_test.drop(['custid', 'year'], axis=1)
-print('Data is ready!')
+print('Hyperparameters ready')
 
 #*#########################
-#! PANEL LINEAR DML
+#! ESTIMATION
 #*#########################
 '''
 Here consider DML model with semi-parametric specification: 
@@ -94,15 +113,20 @@ For estimation of f() and conditional mean of Y a random forest is used.
 Panel DML estimator by Chernozhukov et al (2021) is same procedure but based on different folds in cross-fitting.
 '''
 #get folds for first-stage cross fitting
+#need to reset indices, ow LinearDML's fold arguments makes problems
 x_train=x_train.reset_index(drop=True) 
 x_test=x_test.reset_index(drop=True)
 w_train=w_train.reset_index(drop=True)
 w_test=w_test.reset_index(drop=True) 
 y_train=y_train.reset_index(drop=True)
 y_test=y_test.reset_index(drop=True)
+#get folds
 fs_folds=eu().cross_fitting_folds(w_train, 5, 6, 'quarter')
 #fit linear DML model to train data
+tik=time.time()
 linDML=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=fs_folds)
+tok=time.time() 
+print(tok-tik)
 print('Linear DML fitted')
 #get constant marginal effect 
 cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)

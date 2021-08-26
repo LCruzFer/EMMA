@@ -82,7 +82,8 @@ def create_dummies(df, id_col):
 ms_data=pd.read_csv(data_in/'Misra_Surico_Data'/'2008_data.csv')
 #reorder this dataframe to make it easier to read 
 ms_data=reorder_df(['custid', 'interviewno', 'newid', 'QINTRVMO', 'QINTRVYR'], ms_data)
-
+#replace NaN with 0 
+ms_data=ms_data.replace(np.nan, 0)
 #* General cleaning
 #drop variables that are included twice - keep MS version because of better naming
 nodoubles=ms_data.drop(['AGE_REF', 'PERSLT18'], axis=1)
@@ -90,13 +91,16 @@ nodoubles=ms_data.drop(['AGE_REF', 'PERSLT18'], axis=1)
 newnames={'CKBK_CTX': 'totbalance_ca', 'FINCBTXM': 'tot_fam_inc', 
             'FSALARYM': 'fam_salary_inc', 'MARITAL1': 'maritalstat', 
             'SAVA_CTX': 'totbalance_sa', 'QINTRVMO': 'month', 
-            'QINTRVYR': 'year'}
+            'QINTRVYR': 'year', 'QBLNCM1X': 'out_princ'}
 nodoubles=nodoubles.rename(columns=newnames)
 #drop variables that are not expenditure, rebate, ID or characteristics 
+#also drop ST_HOUS because all are ==2 (not student housing)
+#validIncome and validAssets bear no useful information on their own (for now)
 #!what is nmort?
 cleaned=nodoubles.drop(['RESPSTAT', 'timetrend', 'dropconsumer',
                             'nmort', 'const', 'dropcust', 'timeleft', 
-                            'lasttimetrend', 'chtimetrend']
+                            'lasttimetrend', 'chtimetrend', 'ST_HOUS', 
+                            'validIncome', 'validAssets']
                             + ['const'+str(i) for i in range(15)], axis=1)
 #also drop the rebate variables that have no meaning and the indicators 
 #latter will be created if needed later on by myself again
@@ -105,9 +109,20 @@ cleaned=cleaned.drop(['iontimereb', 'ireballt', 'ireballt_CHK',
                             'iREB', 'iontimereb_CHK', 'iontimereb_EF', 
                             'ilreb', 'ifreb', 'futrebamt'], axis=1)
 
+#* Turn categoricals into two categories only 
+#create dummies for categoricals that have several categories making a distinction between only two broader categories 
+#married=1 if actually married, all other statuses =0
+cleaned['married']=[int(x) for x in cleaned['maritalstat']==1]
+#owned_nm=1 if housing owned w/o mortgage 
+cleaned['owned_nm']=[int(x) for x in cleaned['CUTENURE']==2]
+#owned_m=1 if housing owned w/ mortgage 
+cleaned['owned_m']=[int(x) for x in cleaned['CUTENURE']==1]
+#notowned=1 if housing not owned (all other CUTENURE categories)
+cleaned['notowned']=[int(x) for x in (cleaned['CUTENURE']!=1)&(cleaned['CUTENURE']!=2)]
+
 #* Create Dummies for Categoricals 
 #first get subset of data that contains categoricals 
-categoricals=['totbalance_ca', 'maritalstat', 'totbalance_sa', 'ST_HOUS']
+categoricals=['totbalance_ca', 'maritalstat', 'totbalance_sa', 'CUTENURE']
 cats=cleaned[['newid']+categoricals]
 #then create dummies for each of these 
 cats_dummies=create_dummies(cats, 'newid')
@@ -134,5 +149,28 @@ for i in range(len(cleaned_w_dummies)):
     elif year==2009: 
         cleaned_w_dummies.loc[i, 'quarter']=6
 
-#write this version to CSV
+#* Panel structure with lags
+#count how often household is observed
+count_obs=cleaned_w_dummies[['custid', 'newid']].groupby('custid').count().merge(cleaned_w_dummies[['custid', 'quarter']], on='custid').rename(columns={'newid': 'count'})
+#can only use observations that have been observed at least 2 times 
+cleaned_w_dummies=cleaned_w_dummies.merge(count_obs[['custid', 'count']], on='custid').drop_duplicates(['newid']).reset_index(drop=True)
+panel=cleaned_w_dummies[cleaned_w_dummies['count']>1]
+#lags 
+#only need lag of treatments and outcomes 
+lag_vars=[col for col in panel.columns if 'exp' in col]+[col for col in panel.columns if 'RBT' in col]
+
+#then create lags
+for var in lag_vars: 
+    panel[var+'_lag']=panel[['custid', var]].groupby('custid').shift(-1)
+#drop the 'last' variables 
+panel_dropped=panel.drop([col for col in panel.columns if 'last' in col], axis=1)
+#now only keep households that are only observed 3 times
+panel_lags=panel_dropped[panel_dropped['count']==3]
+#then remove rows that NaN in rows of lag
+panel_nona_lags=panel_lags.dropna(subset=[col for col in panel_lags.columns if '_lag' in col])
+
+#* Write to CSV
 cleaned_w_dummies.to_csv(data_out/'transformed'/'cleaned_dummies.csv', index=False)
+panel.to_csv(data_out/'transformed'/'panel_cleaned.csv', index=False)
+print('Finished!')
+panel_nona_lags.to_csv(data_out/'transformed'/'panel_w_lags.csv', index=False)
