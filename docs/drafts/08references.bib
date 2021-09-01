@@ -1,0 +1,23 @@
+
+@article{DML2017,
+	title = {Double/{Debiased} {Machine} {Learning} for {Treatment} and {Causal} {Parameters}},
+	url = {http://arxiv.org/abs/1608.00060},
+	abstract = {Most modern supervised statistical/machine learning (ML) methods are explicitly designed to solve prediction problems very well. Achieving this goal does not imply that these methods automatically deliver good estimators of causal parameters. Examples of such parameters include individual regression coefficients, average treatment effects, average lifts, and demand or supply elasticities. In fact, estimates of such causal parameters obtained via naively plugging ML estimators into estimating equations for such parameters can behave very poorly due to the regularization bias. Fortunately, this regularization bias can be removed by solving auxiliary prediction problems via ML tools. Specifically, we can form an orthogonal score for the target low-dimensional parameter by combining auxiliary and main ML predictions. The score is then used to build a de-biased estimator of the target parameter which typically will converge at the fastest possible 1/root(n) rate and be approximately unbiased and normal, and from which valid confidence intervals for these parameters of interest may be constructed. The resulting method thus could be called a "double ML" method because it relies on estimating primary and auxiliary predictive models. In order to avoid overfitting, our construction also makes use of the K-fold sample splitting, which we call cross-fitting. This allows us to use a very broad set of ML predictive methods in solving the auxiliary and main prediction problems, such as random forest, lasso, ridge, deep neural nets, boosted trees, as well as various hybrids and aggregators of these methods.},
+	urldate = {2021-08-21},
+	journal = {arXiv:1608.00060 [econ, stat]},
+	author = {Chernozhukov, Victor and Chetverikov, Denis and Demirer, Mert and Duflo, Esther and Hansen, Christian and Newey, Whitney and Robins, James},
+	month = dec,
+	year = {2017},
+	note = {arXiv: 1608.00060},
+	keywords = {62G, Economics - Econometrics, Statistics - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/llccf/Zotero/storage/BYME3B9J/Chernozhukov et al. - 2017 - DoubleDebiased Machine Learning for Treatment and.pdf:application/pdf;arXiv.org Snapshot:/Users/llccf/Zotero/storage/QX5S5ICY/1608.html:text/html},
+}
+
+@article{PanelDML,
+	title = {Orthogonal {Machine} {Learning} for {Demand} {Estimation}: {High} {Dimensional} {Causal} {Inference} in {Dynamic} {Panels}},
+	abstract = {This paper provides estimation and inference methods for a large number of heterogeneous eﬀects in the presence of a high-dimensional vector of control variables in a panel data setting. We allow the number of heterogeneous groups and the number of controls to exceed the sample size. To make informative inference possible, we assume that the treatment eﬀect has a sparse representation and estimate it in two stages. In the ﬁrst stage, we estimate the reduced form for treatment and outcome on an auxiliary sample. In the second stage, we estimate the treatment eﬀect by 1-regularized least squares regression of outcome residuals on the treatment residuals. The proposed estimator presents an improved convergence rate over a one-stage alternative where the treatment eﬀect and the control function are estimated jointly. In addition, we provide inference methods for single and multiple coeﬃcients of the heterogeneous effects. We use a correlated random eﬀects approach to model unobserved unit heterogeneity by extending the approaches from Mundlak (1978) and Chamberlain (1982) to a high-dimensional setting. Using the data from a major food distributor, we apply our method to estimate price elasticities for a large number of heterogeneous products and validate our estimates using experimental price variation.},
+	language = {en},
+	author = {Semenova, Vira and Goldman, Matt and Ai, Microsoft and Chernozhukov, Victor and Taddy, Matt and Ai, Microsoft},
+	pages = {66},
+	file = {Semenova et al. - Orthogonal Machine Learning for Demand Estimation.pdf:/Users/llccf/Zotero/storage/HZZIVJGU/Semenova et al. - Orthogonal Machine Learning for Demand Estimation.pdf:application/pdf},
+}

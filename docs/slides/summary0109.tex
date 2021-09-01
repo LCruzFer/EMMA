@@ -1,0 +1,137 @@
+\documentclass[a4paper, 12pt]{beamer}
+
+%color theme 
+\beamertemplatenavigationsymbolsempty
+%\usetheme{metropolis}
+
+
+\defbeamertemplate*{footline}{shadow theme}
+{%
+  \leavevmode%
+  \hbox{\begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}%
+  \usebeamerfont{author in head/foot}\insertframenumber\hfill\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle%
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{appendixnumberbeamer}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{makecell}
+\usepackage{cancel}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{mathtools}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+\title{Status Summary}
+\date{01.09.2021}
+\author{Lucas Cruz Fernandez}
+
+\begin{document}
+
+\begin{frame}
+    \maketitle
+\end{frame}
+
+\begin{frame}{Overview}
+  \tableofcontents
+\end{frame}
+
+\section{Approach}
+\begin{frame}{Econometric Model}
+  \begin{itemize}
+    \item want to estimate the Partially Linear Model
+    \begin{align} 
+    Y_{it}&=\theta(X_{it})D_{it}+g(X_{it}, W_{it})+\epsilon_{it} \\
+    D_{it}&=h(X_{it}, W_{it})+u_{it}
+    \end{align}
+    \item $\theta(X_{it})$ is the constant marginal CATE
+    \item this allows calculating MPC for each household in each period based on their $X_{it}$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Estimators}
+  \begin{itemize}
+    \item original DML only reasonable for cross-section
+    \item JPS and MS also only use cross-section estimators
+    \begin{itemize}
+      \item[$\rightarrow$] implicitly assume strict exogeneity, which is unreasonable
+    \end{itemize}
+    \item use Panel Double Machine Learning Estimator (DML) by Chernozhukov et al. (2021)
+    \item since treatment dimension fixed ($d_T=1$) only difference to DML is first stage cross-fitting algorithm 
+    \begin{itemize}
+      \item[$\rightarrow$] see Section 3.1 of Chernozhukov et al. (2021)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Panel DML}
+  \begin{algorithm}[H]
+    \caption{Panel DML Recipe}
+    \begin{algorithmic}[1]
+        \State Partition the data into K-folds based on their time index. An observation is added to partition $I_k$ if: 
+                $$I_k=\{(i, t) : \floor{T(k-1)/K}+1 \leq t \leq \floor{Tk/K}\}$$ 
+        \State For each partition $k$ use a first stage estimator to estimate $\hat{d}_k$ and $\hat{l}_k$ using data of all folds except $k$ (cross-fitting). 
+        \State Orthogonalize treatment and outcome of observation $(i, t)$ using the predictions of the corresponding fold to get the residuals. 
+        \State Use all residuals to estimate the coefficient $\theta$ using a suitable estimator.  
+    \end{algorithmic}
+  \end{algorithm}
+\end{frame}
+
+\begin{frame}{Panel DML Algorithm}
+  \begin{enumerate}
+    \item Partition the data into K-folds based on their time index. An observation is added to partition $I_k$ if: 
+            $$I_k=(i, t) : \floor{T(k-1)/K}+1 \leq t \leq \floor{Tk/K}$$
+    \item For each partition $k$ use a first stage estimator to estimate $\hat{d}_k$ and $\hat{y}_k$ using data of all folds except $k$ (cross-fitting). 
+    \item Orthogonalize treatment and outcome of observation $(i, t)$ using the predictions of the corresponding fold to get the residuals. 
+    \item Use all residuals to estimate the coefficient $\theta$ using a suitable estimator. 
+  \end{enumerate}
+\end{frame}
+
+\section{Problems, Ideas, Questions}
+\begin{frame}{Panel DML}
+  \begin{itemize}
+    \item Panel DML needs lag structure but only have at most 3 observations of $i$
+    \item when only using $i$ that have $T=3$ sample size reduced drastically 
+    \item one-period lag should be sufficient as looking at quarterly data, hence two periods for each household in reduced dataset
+    \item idea: run two specifications
+    \begin{enumerate}
+      \item without lags and larger N
+      \item with lags and smaller N 
+    \end{enumerate}
+    \item compare whether effects differ strongly 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{What are X?}
+  \begin{itemize}
+    \item choosing $X=Z$ leads to undertermined covariance matrix of the estimator 
+    \item hence, what variables should be X? 
+    \item data-driven way not feasible as this could change derived inference results 
+    \item use economic reasoning but what is reasoning then? Could find something for every variable I guess... 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Single variable effects}
+  \begin{itemize}
+    \item estimate the constant marginal CATE $E[Y_1 - Y_0|X=x]$ 
+    \item $X$ is a vector of variables, hence cannot see single variable effects on treatment effect 
+    \item idea 1: simply look at correlations between point estimates and variable 
+    \item idea 2: use the Marginal Effect at the Means, i.e. setting all $X_{\setminus j}$ at their cross-sectional mean to get $X_j$'s marginal CATE at the mean 
+    \begin{itemize}
+      \item[$\rightarrow$] major issue: depends extremely on test/train sample split 
+      \item[$\rightarrow$] why? salary and total family income have a giant variance
+      \item[$\rightarrow$] drop outliers first to see whether there are just some issues there
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\end{document}
