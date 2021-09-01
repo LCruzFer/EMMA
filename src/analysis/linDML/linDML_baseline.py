@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from econml.dml import LinearDML, CausalForestDML
+from econml.inference import BootstrapInference
 from sklearn.ensemble import RandomForestRegressor as RFR
-from sklearn.model_selection import GridSearchCV, train_test_split
 import itertools
 #* set system path to import utils
 wd=Path.cwd()
@@ -45,7 +45,9 @@ def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds, n_
                     )
     print('Model set up!')
     #fit to train data 
-    linDML.fit(y_train, t_train, X=x_train, W=w_train)
+    linDML.fit(y_train, t_train, X=x_train, W=w_train, 
+                #inference=BootstrapInference(n_bootstrap_samples=50)
+                )
     print('Model fitted!')
     return linDML
 
@@ -83,8 +85,19 @@ x_cols=['AGE', 'children', 'fam_salary_inc', 'tot_fam_inc',
 x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
 x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
 #drop id variables from w data 
-w_train=w_train.drop(['custid', 'year'], axis=1)
-w_test=w_test.drop(['custid', 'year'], axis=1)
+w_train=w_train.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
+w_test=w_test.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
+
+#! get means datasets for MEAM
+means_train=z_train.groupby(['quarter']).mean().drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
+means_test=z_test.groupby(['quarter']).mean().drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
+#create mean dataframe 
+means_train_df=z_train[['custid', 'quarter']].merge(means_train, on='quarter', how='left')
+means_test_df=z_test[['custid', 'quarter']].merge(means_test, on='quarter', how='left')
+#split into X and W 
+x_train_means, w_train_means=du().split_XW(means_train_df, x_cols)
+x_test_means, w_test_means=du().split_XW(means_test_df, x_cols)
+
 print('Data is ready!')
 
 #* Random Forest Hyperparameters
@@ -134,17 +147,50 @@ cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
 cme_df_lin=cme_inf_lin.summary_frame()
 print(len(cme_df_lin[cme_df_lin['pvalue']<=0.1]))
 
+'''
 #write to csv
 filename='CME_'+treatment+'.csv'
 cme_df_lin.to_csv(data_out/'results'/filename)
+'''
 
 #*Marginal Effect at the Means
+#! try training model on means
+#use means dataset generated above to fit model 
+x_train_means=x_train_means.reset_index(drop=True)
+x_test_means=x_test_means.reset_index(drop=True)
+w_means_train=w_train_means.reset_index(drop=True)
+w_means_test=w_test_means.reset_index(drop=True)
+#mean at which variable? 
+var='AGE'
+x_train_means['AGE']=x_train['AGE']
+x_test_means['AGE']=x_test['AGE']
+#get folds
+fs_folds_means=eu().cross_fitting_folds(w_means_train, 5, 6, 'quarter')
+#fit model to means 
+tik=time.time()
+linDML=fit_linDML(y_train, r_train, x_train_means, w_train_means, best_params_Y, best_params_R, folds=fs_folds_means)
+tok=time.time() 
+print(tok-tik)
+print('Linear DML fitted')
+#get constant marginal effect 
+cme_inf_lin=linDML.const_marginal_effect_inference(X=x_test)
+#get summary dataframe
+cme_df_lin=cme_inf_lin.summary_frame()
+print(len(cme_df_lin[cme_df_lin['pvalue']<=0.1]))
+
 #apply get_all_meam() to x_test data to get MEAM for all variables 
 meams=eu().get_all_meam(linDML, x_test)
 for col in x_train.columns: 
     sig=meams[meams['pvalue'+'_'+col]<=0.1]
     print(f'{col}: {len(sig)}')
 
+'''
 #write to csv 
 filename_meam='MEAMS_'+treatment+'.csv'
 meams.to_csv(data_out/'results'/filename_meam, index=False)
+'''
+
+#*Corr(point estimates, X)
+#check with which X point estimates are correlated
+corr=eu().coef_var_correlation(x_test, cme_df_lin['point_estimate'])
+print(corr)
