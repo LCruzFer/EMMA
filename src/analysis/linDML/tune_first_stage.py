@@ -62,7 +62,7 @@ def tune_ert(params, X, Y):
 #read in demeaned data
 demeaned_vars=pd.read_csv(data_out/'transformed'/'prepped_data_demeaned.csv')
 #choose outcome 
-outcome='RBTAMT'
+outcome='chTOTexp'
 #choose treatment
 treatment='RBTAMT'
 #split into test and train data and then create subset dataframes
