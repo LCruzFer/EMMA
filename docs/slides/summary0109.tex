@@ -58,7 +58,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Estimators}
+\begin{frame}{Estimator}
   \begin{itemize}
     \item original DML only reasonable for cross-section
     \item JPS and MS also only use cross-section estimators
@@ -70,6 +70,21 @@
     \begin{itemize}
       \item[$\rightarrow$] see Section 3.1 of Chernozhukov et al. (2021)
     \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Estimator}
+  \begin{itemize}
+    \item rewrite the PLM to 
+    \begin{align*}
+      Y_{it}-E[Y_{it}|X_{it}, W_{it}]=\theta(X)(D_{it}-E[D_{it}|X_{it}, W_{it}]) +\epsilon_{it}
+    \end{align*}
+    \item use a machine learning estimator to find estimators for
+    \begin{align*}
+      d_{i0}&=E[Y_{it}|X_{it}, W_{it}] \\
+      l_{i0}&=E[D_{it}|X_{it}, W_{it}](=h(X_{it}, W_{it}))
+    \end{align*}
+    \item get respective residuals and estimate $\theta(X)$ using OLS
   \end{itemize}
 \end{frame}
 
@@ -86,28 +101,19 @@
   \end{algorithm}
 \end{frame}
 
-\begin{frame}{Panel DML Algorithm}
-  \begin{enumerate}
-    \item Partition the data into K-folds based on their time index. An observation is added to partition $I_k$ if: 
-            $$I_k=(i, t) : \floor{T(k-1)/K}+1 \leq t \leq \floor{Tk/K}$$
-    \item For each partition $k$ use a first stage estimator to estimate $\hat{d}_k$ and $\hat{y}_k$ using data of all folds except $k$ (cross-fitting). 
-    \item Orthogonalize treatment and outcome of observation $(i, t)$ using the predictions of the corresponding fold to get the residuals. 
-    \item Use all residuals to estimate the coefficient $\theta$ using a suitable estimator. 
-  \end{enumerate}
-\end{frame}
-
 \section{Problems, Ideas, Questions}
 \begin{frame}{Panel DML}
   \begin{itemize}
     \item Panel DML needs lag structure but only have at most 3 observations of $i$
     \item when only using $i$ that have $T=3$ sample size reduced drastically 
     \item one-period lag should be sufficient as looking at quarterly data, hence two periods for each household in reduced dataset
-    \item idea: run two specifications
+    \item idea: run two (three) specifications
     \begin{enumerate}
       \item without lags and larger N
       \item with lags and smaller N 
     \end{enumerate}
     \item compare whether effects differ strongly 
+    \item advantage: Panel DML actually captures these dynamics compared to approaches by JPS and MS
   \end{itemize}
 \end{frame}
 
@@ -127,9 +133,8 @@
     \item idea 1: simply look at correlations between point estimates and variable 
     \item idea 2: use the Marginal Effect at the Means, i.e. setting all $X_{\setminus j}$ at their cross-sectional mean to get $X_j$'s marginal CATE at the mean 
     \begin{itemize}
-      \item[$\rightarrow$] major issue: depends extremely on test/train sample split 
+      \item[$\rightarrow$] major issue: depends extremely on test/train sample split, no matter what way is chosen to train model
       \item[$\rightarrow$] why? salary and total family income have a giant variance
-      \item[$\rightarrow$] drop outliers first to see whether there are just some issues there
     \end{itemize}
   \end{itemize}
 \end{frame}

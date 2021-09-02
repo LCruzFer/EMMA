@@ -1,0 +1,11 @@
+\section{Methodology}
+To identify the causal effect of the income shock on households' change in consumption, we employ the Double Machine Learning (DML) approach developed by \cite{DML2017}. More precisely, to account for the dynamic structure of our data we use the variant from \cite{PanelDML} who present a DML estimator that allows for less constraining conditions. \\ 
+In a setting like ours where one is interested to estimate heterogenous treatment effects, the DML estimator has a major advantage over classical econometric approaches which have been adopted in the literature so far. Namely, it does not restrict the effect of confounders on the outcome to a specific functional form but uses Machine Learning methods to freely estimate this relationship. Simultaneously, the orthogonalization step discussed below takes care of identifying the true effect stemming only from the treatment. Lastly, from a tehoretical perspective this estimator yields very efficient properties when it comes to its asymptotic analysis, especially a rate of convergence that is faster than other nonparametric estimators, in part even achieving root-n consistency. However, we will not further elaborate on these lattertechnical details but rather focus on how the estimator works in general. For a more technical discussion the reader is referred to \cite{DML2017} and \cite{PanelDML}. 
+
+\subsection*{Idea behind DML}
+For the purpose of explanation and in our analysis later on, we consider a partially linear model (PLM) of the form 
+\begin{align}
+    Y_{it}&=\theta(X_{it})D_{it}+g(X_{it}, W_{it})+\epsilon_{it} \label{eq:plm1}\\
+    D_{it}&=h(X_{it}, W_{it})+u_{it}, \label{eq:plm2}
+\end{align}
+where $Y_{it}$ is the outcome, $D_{it}$ is the treatment and $X_{it}$ and $W_{it}$ are observable variables. We distinct between simple confounders $W_{it}$ which affect the outcome and also potentially the treatment and $X_{it}$ which additionally are considered to impact the average treatment effect of $D_{it}$ on $Y_{it}$. 
