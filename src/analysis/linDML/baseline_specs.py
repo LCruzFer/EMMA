@@ -175,7 +175,7 @@ print(tok-tik)
 print('Linear DML fitted')
 #get constant marginal CATE summary df
 spec1_inf=spec1.const_marginal_effect_inference(X=x_test).summary_frame()
-print(len(spec1_inf[spec1_inf['pvalue']<=0.1]))
+print(len(spec1_inf[spec1_inf['pvalue']<=0.05]))
 #get ATE 
 spec1_ate=spec1.ate_inference(X=x_test)
 #insignificant! (nice)
