@@ -1,11 +1,51 @@
+\newpage
 \section{Methodology}
 To identify the causal effect of the income shock on households' change in consumption, we employ the Double Machine Learning (DML) approach developed by \cite{DML2017}. More precisely, to account for the dynamic structure of our data we use the variant from \cite{PanelDML} who present a DML estimator that allows for less constraining conditions. \\ 
-In a setting like ours where one is interested to estimate heterogenous treatment effects, the DML estimator has a major advantage over classical econometric approaches which have been adopted in the literature so far. Namely, it does not restrict the effect of confounders on the outcome to a specific functional form but uses Machine Learning methods to freely estimate this relationship. Simultaneously, the orthogonalization step discussed below takes care of identifying the true effect stemming only from the treatment. Lastly, from a tehoretical perspective this estimator yields very efficient properties when it comes to its asymptotic analysis, especially a rate of convergence that is faster than other nonparametric estimators, in part even achieving root-n consistency. However, we will not further elaborate on these lattertechnical details but rather focus on how the estimator works in general. For a more technical discussion the reader is referred to \cite{DML2017} and \cite{PanelDML}. 
+In a setting like ours where one is interested to estimate heterogenous treatment effects, the DML estimator has a major advantage over classical econometric approaches which have been adopted in the literature so far. Namely, it does not restrict the effect of confounders on the outcome to a specific functional form but uses Machine Learning methods to freely estimate this relationship. Simultaneously, the orthogonalization step discussed below takes care of identifying the true effect stemming only from the treatment. Lastly, from a theoretical perspective this estimator yields very efficient properties when it comes to its asymptotic analysis, especially a rate of convergence that is faster than other nonparametric estimators, in part even achieving root-n consistency. However, we will not further elaborate on these lattertechnical details but rather focus on how the estimator works in general. For a more technical discussion the reader is referred to \cite{DML2017} and \cite{PanelDML}. Instead, this section introduces the general idea behind the DML estimator and how the Panel DML setup differs. These differences 
 
-\subsection*{Idea behind DML}
-For the purpose of explanation and in our analysis later on, we consider a partially linear model (PLM) of the form 
+\subsection{Idea behind DML}
+We start with considering a Partially Linear Model of treatment and outcome. However, be aware that the DML estimator is not constrained to this form but rather it helps us to understand the idea and mechanics behind it in a clear way. Section X.x will briefly present what a fully non-parametric approach looks like. \\ 
+The Partially Linear Model (PLM) is given by
 \begin{align}
     Y_{it}&=\theta(X_{it})D_{it}+g(X_{it}, W_{it})+\epsilon_{it} \label{eq:plm1}\\
     D_{it}&=h(X_{it}, W_{it})+u_{it}, \label{eq:plm2}
 \end{align}
-where $Y_{it}$ is the outcome, $D_{it}$ is the treatment and $X_{it}$ and $W_{it}$ are observable variables. We distinct between simple confounders $W_{it}$ which affect the outcome and also potentially the treatment and $X_{it}$ which additionally are considered to impact the average treatment effect of $D_{it}$ on $Y_{it}$. 
+where $Y_{it}$ is the outcome, $D_{it}$ is the treatment and $X_{it}$ and $W_{it}$ are observable variables. We distinct between simple confounders $W_{it}$ which affect the outcome and also potentially the treatment and $X_{it}$ which additionally are considered to impact the average treatment effect of $D_{it}$ on $Y_{it}$. The choice of these variables is left to the researcher. \\ 
+The DML now follows a two step procedure to clearly identify $\theta(X)$. First, we define 
+\begin{align}
+    E[Y_{it}|X_{it}, W_{it}] &\equiv f(X_{it}, W_{it}) \label{eq:EY_def}\\ 
+    E[D_{it}|X_{it}, W_{it}] &\equiv h(X_{it}, W_{it}) \label{eq:ED_def}
+\end{align}
+where (\ref{eq:ED_def}) follows from (\ref{eq:plm2}). The rewrite (\ref{eq:plm1}) 
+\begin{align*}
+    Y_{it}-f(X_{it}, W_{it})=\theta(X_{it})(D_{it} - h(X_{it}, W_{it})+\epsilon_{it}
+\end{align*}
+The first stage now consists of choosing an appropriate Machine Learning method to find estimates of the conditional expectation functions $f(\ddot, \ddot)$ and $h(X_{it}, W_{it})$ (\textbf{which is nicer way of presentation?}). A welcome property of the DML estimation is its agnostic to the first stage estimator. Thus, it allows choosing the appropriate prediction method for the given setting. \\
+Once we obtain the first stage predictions $\hat{f}(X_{it}, W_{it})$ and $\hat{f}(X_{it}, W_{it})$, we use them to orthogonalize treatment and outcome to retrieve the residuals 
+\begin{align*} 
+    \tilde{Y}_{it}&=Y_{it}-\hat{f}(X_{it}, W_{it}) \\ 
+    \tilde{D}_{it}&=D_{it}-\hat{h}(X_{it}, W_{it}).
+\end{align*}
+The orthogonalization guarantees that the residuals only contian variation that is not induced by any of the confounders in treatment and outcome, respectively. Therefore, the second stage then only consists of a simple linear regression of $\tilde{Y}_{it}$ on $\tilde{D}_{it}$ that yields $\hat{\theta}(X)$. \textbf{How do we get the individual level point estimates?}
+
+\subsubsection{First Stage Cross-Fitting}
+Should I additionally desribe the cross-fitting approach or just mention it as a side thing? ->YES
+
+\subsection{Panel DML}
+So far we have considered the original DML estimator that considers a cross-sectional setting, however, we will look at a dynamic panel of households. However, under the assumption of strict exogeneity, it is also reasonable to use this estimator in our setting. The reasoning in favor and against this assumption have been laid out in Section X. Since we aim to compare how well this assumption holds up contrary to when relaxing it, we have to introduce the Panel DML approach by \cite{PanelDML}, which only assumes conditional sequential exogeneity. More sepcifically, we assume 
+\begin{align*}
+    E[\epsilon_{it}|X_{it}, W_{it}, \Phi_{t}]&=0 \\ 
+    E[u_{it}|X_{it}, W_{it}, \Phi_{t}]&=0
+\end{align*}
+where $\Phi_t$ is the information set in period $t$. Under some more technical assumptions, Semenova et al. show that in a setting with low-dimensional treatment, the estimator is similar to the original DML. The only difference in the estimation procedure is the cross-fitting algorithm in the first stage. The folds for the cross-fitting procedure are formed based on the time index instead of simply randomly splitting up the sample. \\ 
+In practice, we will include lagged values of treatment and outcome as confounders in $W_{it}$ to model the information set $\Phi_{t}$. This procedure is also proposed by Semenova et al. 
+
+\subsection{Nonparametric DML}
+The above described estimators both aim to estimate a partially linear model of treatment and outcome. While this allows for flexible estimation of the confounders, it still assumes a linear relationship between the treatment and outcome, resulting in the estimate $\hat{\theta}(X)$ being linear in X. While this is similar to the current literature, we also propose a specification in which we make no assumption on the functional form whatsoever. This nonparametric approach has the same first stage as the PLM based one, but estimates the second stage using the Causal Forest estimator proposed by Athey and Wager (????). The Causal Forest is a generalization of the Random Forest prediction method developed by Breimann (2001), which has found application in a wide array of predictive tasks. However, the original algorithm - as most Machine Learning methods focusing on prediction - does not allow for any causal inference. The Causal Forest solves this problem by generalizing the objective function to fit a treatment effect study framework and developing theory that allows retrieving standard errors of the estimated coefficients. (\textbf{obviously re-write but no more detail in general I guess}) \\ 
+Using the CF as a second stage enables us to write the model as 
+\begin{align*}
+    Y_{it}&=g(D_{it}, X_{it}, W_{it})+\epsilon_{it} \\ 
+    D_{it}&=m(D_{it}, X_{it}, W_{it})+u_{it}.
+\end{align*}
+There are no specific assumption in what what form the treatment effect will depend on the confounders $X_{it}$. As part of our analysis we will compare the results to check whether the relationship is indeed linear or whether we discover non-linear heterogeinities that have not been considered yet. 
+
