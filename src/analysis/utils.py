@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np 
+import math
 from sklearn.model_selection import train_test_split 
 import matplotlib.pyplot as plt
 
@@ -192,10 +193,52 @@ class estim_utils:
             y_axis[i, :]=np.array((avg_cilow, avg_cate, avg_ciup))
             #print share done so far 
             share=i/len(x_axis) 
-            if share%5==0: 
+            if math.ceil(share)%5==0: 
                 print(f'{share} are done')
-        #make the PDP 
+        #make the PDP w/ CI
+        colors=['red', 'blue', 'red']
         fig, ax=plt.subplots()
-        ax.plot(x_axis, y_axis[:, 1])
+        for i in range(y_axis.shape[1]):
+            ax.plot(x_axis, y_axis[:, i], color=colors[i])
+        plt.show()
         
         return x_axis, y_axis
+
+
+    def ide(self, estimator, X, var): 
+        '''
+        Create Individual Conditional Expectation plot for var of estimator using X data.
+        
+        *estimator=some econml estimator object
+        *X=pandas dfl; data for X
+        *var=str; variable we want to plot pdp for
+        '''
+        #make pdp for values of var in range min(var), max(var)
+        #get bounds 
+        low=min(X[var])
+        high=max(X[var])
+        x_axis=np.arange(low, high, step=1)
+        #set up empty array in which y axis value will be saved for each individual
+        y_axis=np.empty((len(X), 3, len(x_axis)))
+        #for each element of x-axis, replace the var value with it 
+        for i, val in enumerate(x_axis):
+            #make a copy that contains new var values
+            X_copy=X.copy()
+            X_copy[var]=val
+            #then get CATE for this set of data 
+            cate_df=estimator.const_marginal_effect_inference(X=X_copy).summary_frame()
+            #and save cate and CI bounds in y_axis
+            y_axis[:, :, i]=np.array((cate_df['ci_lower'], 
+                                    cate_df['point_estimate'], 
+                                    cate_df['ci_upper'])).T
+            #print share done so far 
+            share=i/len(x_axis) 
+            if int(share)%5==0: 
+                print(f'{share} are done')
+        #set up figure 
+        fig, ax=plt.subplots() 
+        #add line of each individual
+        for i in range(len(X)): 
+            ax.plot(x_axis, y_axis[i, 1, :])
+        
+        return fig, x_axis, y_axis
