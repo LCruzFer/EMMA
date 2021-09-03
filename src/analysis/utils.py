@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np 
 from sklearn.model_selection import train_test_split 
+import matplotlib.pyplot as plt
 
 '''
 This file contains various helper functions for that are done in several files but always involve the same steps - e.g. splitting data into train and test sets or other things.
@@ -160,3 +161,41 @@ class estim_utils:
             corrs[col]=np.corrcoef(df[col], coefs)[0, 1]
         
         return corrs
+
+    def pdp(self, estimator, X, var): 
+        '''
+        Plot partial dependence plot of var for estimator using X data.
+        
+        *estimator=some econml estimator object
+        *X=pandas dfl; data for X
+        *var=str; variable we want to plot pdp for
+        '''
+        #make pdp for values of var in range min(var), max(var)
+        #get bounds 
+        low=min(X[var])
+        high=max(X[var])
+        x_axis=np.arange(low, high, step=1)
+        #set up empty array in which y axis value will be saved
+        y_axis=np.empty((len(x_axis), 3))
+        #for each element of x-axis, replace the var value with it 
+        for i, val in enumerate(x_axis):
+            #make a copy that contains new var values
+            X_copy=X.copy()
+            X_copy[var]=val
+            #then get CATE for this set of data 
+            cate_df=estimator.const_marginal_effect_inference(X=X_copy).summary_frame()
+            #then get avg of these predictions and the avg CI
+            avg_cate=cate_df['point_estimate'].mean()
+            avg_cilow=cate_df['ci_lower'].mean() 
+            avg_ciup=cate_df['ci_upper'].mean()
+            #and save it in y_axis array 
+            y_axis[i, :]=np.array((avg_cilow, avg_cate, avg_ciup))
+            #print share done so far 
+            share=i/len(x_axis) 
+            if share%5==0: 
+                print(f'{share} are done')
+        #make the PDP 
+        fig, ax=plt.subplots()
+        ax.plot(x_axis, y_axis[:, 1])
+        
+        return x_axis, y_axis
