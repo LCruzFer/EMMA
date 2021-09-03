@@ -166,7 +166,7 @@ For estimation of f() and conditional mean of Y a random forest is used.
 Original DML estimator assuming strict exogeneity is used here. Not accounting for any lag/panel structure.
 '''
 #set how many folds are used in cross-fitting
-n_folds=2
+n_folds=5
 #fit linear DML model to train data
 tik=time.time()
 spec1=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=n_folds)
