@@ -1,13 +1,13 @@
 # Fdb version 3
-["bibtex 01main"] 1630854961 "01main.aux" "01main.bbl" "01main" 1630857280
+["bibtex 01main"] 1630854961 "01main.aux" "01main.bbl" "01main" 1630857327
   "/usr/local/texlive/2021/texmf-dist/bibtex/bst/economic/ecta.bst" 1389482635 29983 0ef0a2bd678e76d0ae833edd63f5ad06 ""
-  "01main.aux" 1630857279 1683 7be0b7bc57140128606b6e66817710e0 "pdflatex"
+  "01main.aux" 1630857326 1683 7be0b7bc57140128606b6e66817710e0 "pdflatex"
   "08references.bib" 1630837221 4259 bedb6e6ccdbcdee05c2eb021e1f6e10c ""
-  "coverpage.aux" 1630857279 748 7a19016ce4e9abca4f207575fc5f1b12 "pdflatex"
+  "coverpage.aux" 1630857326 748 7a19016ce4e9abca4f207575fc5f1b12 "pdflatex"
   (generated)
   "01main.bbl"
   "01main.blg"
-["pdflatex"] 1630857278 "/Users/llccf/OneDrive/Dokumente/4. Semester/EMMA/docs/drafts/01main.tex" "01main.pdf" "01main" 1630857280
+["pdflatex"] 1630857326 "/Users/llccf/OneDrive/Dokumente/4. Semester/EMMA/docs/drafts/01main.tex" "01main.pdf" "01main" 1630857327
   "/Users/llccf/OneDrive/Dokumente/4. Semester/EMMA/docs/drafts/01main.tex" 1630837236 899 a0d95709c826fdf080595018d58eca19 ""
   "/usr/local/texlive/2021/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -79,7 +79,7 @@
   "/usr/local/texlive/2021/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1629983308 5184969 86b320cbbe8b40fbd83a9f6d3787fe5b ""
   "/usr/local/texlive/2021/texmf-var/web2c/pdftex/pdflatex.fmt" 1629983409 2801502 467a333cdd44a9a7a026fc48626d8ef6 ""
   "/usr/local/texlive/2021/texmf.cnf" 1616695596 577 4c1911a7228e554c6032256d3cf5567d ""
-  "01main.aux" 1630857279 1683 7be0b7bc57140128606b6e66817710e0 "pdflatex"
+  "01main.aux" 1630857326 1683 7be0b7bc57140128606b6e66817710e0 "pdflatex"
   "01main.bbl" 1630854961 911 e2092f86888effbfb34e5355712b6773 "bibtex 01main"
   "01main.tex" 1630837236 899 a0d95709c826fdf080595018d58eca19 ""
   "02introduction.tex" 1630837221 4046 c11302e82a8b8e21970d972bbaa45998 ""
@@ -89,11 +89,11 @@
   "06estim_and_results.tex" 1630837221 626 1dda71eb7adbddf9936390b0d4a4f1cc ""
   "07conclusion.tex" 1630837221 0 d41d8cd98f00b204e9800998ecf8427e ""
   "09appendix.tex" 1630837221 0 d41d8cd98f00b204e9800998ecf8427e ""
-  "coverpage.aux" 1630857279 748 7a19016ce4e9abca4f207575fc5f1b12 "pdflatex"
-  "coverpage.tex" 1630837221 630 a78903d5b03a160e3a02f8a83d69c579 ""
+  "coverpage.aux" 1630857326 748 7a19016ce4e9abca4f207575fc5f1b12 "pdflatex"
+  "coverpage.tex" 1630857325 630 66b64a26c2033b2b1080eafe0f4fa594 ""
   "latex_aux.tex" 1630837221 404 0298f6bd76b1b8d8ef7e1ff11a11daa9 ""
   (generated)
-  "01main.pdf"
-  "01main.log"
   "coverpage.aux"
   "01main.aux"
+  "01main.log"
+  "01main.pdf"
