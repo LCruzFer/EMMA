@@ -1,12 +1,12 @@
 import time
 import sys
 from pathlib import Path
-from matplotlib.pyplot import plot
 import pandas as pd
 import numpy as np
-from econml.dml import LinearDML, CausalForestDML
+from econml.dml import LinearDML, CausalForestDML, SparseLinearDML
 from econml.inference import BootstrapInference
 from sklearn.ensemble import RandomForestRegressor as RFR
+from sklearn.preprocessing import PolynomialFeatures
 import itertools
 #* set system path to import utils
 wd=Path.cwd()
@@ -43,7 +43,7 @@ def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds):
                     model_t=RFR(n_estimators=1000,
                                 max_depth=params_T['max_depth'],    
                                 min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
-                    cv=folds, fit_cate_intercept=False, 
+                    cv=folds, fit_cate_intercept=True, 
                     random_state=2021
                     )
     print('Model set up!')
@@ -87,6 +87,39 @@ def fit_cfDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds):
     print('Model fitted!')
     return cfDML
 
+def fit_sparseDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds, feat): 
+    '''
+    Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
+
+    *Y=outcome data 
+    *T=treatment data 
+    *W=confounders that have no effect on treatment effect 
+    *X=confounders that can have effect on treatment effect 
+    *params=parameters for random forest
+    *n_test=size of test set
+    '''
+    #initialize DML model with tuned parameters
+    spDML=SparseLinearDML(model_y=RFR(n_estimators=1000,
+                                max_depth=params_Y['max_depth'],       
+                                min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                    model_t=RFR(n_estimators=1000,
+                                max_depth=params_T['max_depth'],    
+                                min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                    featurizer=feat,
+                    cv=folds, fit_cate_intercept=False, 
+                    random_state=2021, 
+                #! do they converge now?
+                    max_iter=2000
+                    )
+    print('Model set up!')
+    #fit to train data 
+    spDML.fit(y_train, t_train, X=x_train, W=w_train, 
+            #bootstrapped or asymptotic inference?
+                #inference=BootstrapInference(n_bootstrap_samples=50)
+                )
+    print('Model fitted!')
+    return spDML
+
 #*#########################
 #! DATA
 #*#########################
@@ -119,8 +152,7 @@ z_test_spec3=z_test.merge(variables[['newid', outcome+'_lag', treatment+'_lag']]
 
 #* Splitting Z into X and W (Spec 1 and 2)
 #consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-x_cols=['AGE', 'children', 'fam_salary_inc', 'tot_fam_inc',
-        'adults', 'payment', 'married', 'owned_nm', 'owned_m']
+x_cols=['FAM_SIZE', 'children', 'tot_fam_inc', 'AGE']
 #split Z into X and W data
 x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
 x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
@@ -136,9 +168,6 @@ x_test_spec3, w_test_spec3=du().split_XW(Z=z_test, x_columns=x_cols)
 w_train_spec3=w_train_spec3.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
 w_test_spec3=w_test_spec3.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
 print('Data is ready!')
-#* Saving x_test 
-#for partial dependence plots need the x test set, save it as csv 
-x_test.to_csv(data_out/'transformed'/'x_testset.csv', index=False)
 
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
@@ -155,6 +184,12 @@ best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparam
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
 print('Hyperparameters ready')
 
+#* save train and test set of X, Y and R for plotting and other stuff later on 
+x_test.to_csv(data_out/'transformed'/'x_test.csv')
+y_test.to_csv(data_out/'transformed'/'y_test.csv')
+r_test.to_csv(data_out/'transformed'/'r_test.csv')
+print('Data saved')
+
 #*#########################
 #! ESTIMATION: Specification 1
 #*#########################
@@ -166,13 +201,12 @@ For estimation of f() and conditional mean of Y a random forest is used.
 Original DML estimator assuming strict exogeneity is used here. Not accounting for any lag/panel structure.
 '''
 #set how many folds are used in cross-fitting
-n_folds=5
+n_folds=2
 #fit linear DML model to train data
 tik=time.time()
 spec1=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=n_folds)
 tok=time.time() 
 print(tok-tik)
-print('Linear DML fitted')
 #get constant marginal CATE summary df
 spec1_inf=spec1.const_marginal_effect_inference(X=x_test).summary_frame()
 print(len(spec1_inf[spec1_inf['pvalue']<=0.05]))
@@ -256,3 +290,16 @@ spec4_inf=spec4.const_marginal_effect_inference(X=x_test).summary_frame()
 print(len(spec4_inf[spec4_inf['pvalue']<=0.1]))
 #write to csv 
 spec4_inf.to_csv(data_out/'results'/'cate_spec4.csv')
+
+#*#########################
+#! ESTIMATION: Specification 5
+#*#########################
+#use SparseLinearDML and high degree of polynomials of X 
+tik=time.time() 
+spec5=fit_sparseDML(y_train, r_train, x_train, w_train, best_params_Y, 
+                    best_params_R, folds=2, 
+                    feat=PolynomialFeatures(degree=2, include_bias=False))
+tok=time.time() 
+print(tok-tik)
+spec5_inf=spec5.const_marginal_effect_inference(X=x_test).summary_frame()
+print(len(spec5_inf[spec5_inf['pvalue']<=0.1]))
