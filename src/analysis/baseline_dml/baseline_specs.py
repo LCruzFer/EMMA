@@ -152,6 +152,9 @@ z_test_spec3=z_test.merge(variables[['newid', outcome+'_lag', treatment+'_lag']]
 
 #* Splitting Z into X and W (Spec 1 and 2)
 #consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
+#!
+#*IDEA: use percentile of rebate size household is in to control for what role the size of the income shock has on MPC
+#!
 x_cols=['FAM_SIZE', 'children', 'tot_fam_inc', 'AGE']
 #split Z into X and W data
 x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
