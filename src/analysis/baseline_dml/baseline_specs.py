@@ -297,6 +297,8 @@ print('CF DML fitted')
 #get constant marginal CATE
 spec4_inf=spec4.const_marginal_effect_inference(X=x_test).summary_frame()
 print(len(spec4_inf[spec4_inf['pvalue']<=0.1]))
+
+eu().pdp(spec4, x_test, 'liqassii')
 #write to csv 
 spec4_inf.to_csv(data_out/'results'/'cate_spec4.csv')
 
