@@ -79,6 +79,7 @@ ms_data=pd.read_csv(data_in/'Misra_Surico_Data'/'2008_data.csv')
 #change order of columns in ms_data to display relevant IDs as first columns 
 ms_data=reorder_df(['custid', 'interviewno', 'newid'], ms_data)
 
+
 #*Categoricals 
 #some observables are categoricals, which need to be encoded using OneHotEncoding
 #-> computationally expensive, see https://stackoverflow.com/questions/38108832/passing-categorical-data-to-sklearn-decision-tree

@@ -23,6 +23,15 @@ This file estimates the 3 baseline specifications of the linear DML model to est
 '''
 
 #*#########################
+#! IDEAS & TO DOs
+#*#########################
+
+#IDEA: use percentile of rebate size household is in to control for what role the size of the income shock has on MPC
+#TODO: how to control for different channels 
+#TODO: what is X, what is W? 
+#TODO: streamline for final estimation
+#TODO: turn different estimation functions into one class such that data only supplied once to class 
+#*#########################
 #! FUNCTIONS
 #*#########################
 def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds): 
@@ -129,7 +138,9 @@ def fit_sparseDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds,
 #panel structure data 
 variables=pd.read_csv(data_out/'transformed'/'panel_w_lags.csv')
 print('Variables loaded')
-
+#!right now drop all totbalance and maritalstat variables 
+variables=du().drop_vars(variables, 'totbalance')
+variables=du().drop_vars(variables, 'maritalstat')
 #* Choosing treatment and outcome
 #choose outcome 
 outcome='chTOTexp'
@@ -139,23 +150,19 @@ treatment='RBTAMT'
 #* Splitting Data into test and train sample
 #split into test and train data and then create subset dataframes
 y_train, y_test, r_train, r_test, z_train, z_test=du().create_test_train(variables, 'custid', outcome, treatment, n_test=500)
-#drop change variables from confounders
-z_train=z_train.drop([col for col in z_train.columns if 'ch' in col], axis=1)
-z_test=z_test.drop([col for col in z_test.columns if 'ch' in col], axis=1)
-#merge children back onto Z datasets
-z_train=z_train.merge(variables[['newid', 'children']], on='newid')
-z_test=z_test.merge(variables[['newid', 'children']], on='newid')
-
 #merge lags of treatment and rebate back on Z data for spec 3, others do not include them
 z_train_spec3=z_train.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
 z_test_spec3=z_test.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
-
+#drop unnecessary variables 
+dropvars=['count', 'payment', 'notowned']
+z_train=z_train.drop(dropvars, axis=1)
+z_test=z_test.drop(dropvars, axis=1)
 #* Splitting Z into X and W (Spec 1 and 2)
+#what should X be? 
+#reasonable: AGE (life cycle model), fam_size (more precautionary saving, e.g. for college of kids -> see what reaction of education spending is for families),
+#liqassii (liquidity is key), married (??), income 
 #consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-#!
-#*IDEA: use percentile of rebate size household is in to control for what role the size of the income shock has on MPC
-#!
-x_cols=['FAM_SIZE', 'children', 'tot_fam_inc', 'AGE']
+x_cols=['AGE', 'FAM_SIZE', 'liqassii', 'married', 'tot_fam_inc']
 #split Z into X and W data
 x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
 x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
@@ -200,11 +207,11 @@ print('Data saved')
 Here consider DML model with semi-parametric specification: 
 Y_{it}=\theta*R_{it} + g(X_{it}, W_{it}) + U_{it}
 R_{it}=f(X_{it}, W_{it}) + V_{it}
-For estimation of f() and conditional mean of Y a random forest is used.
+For estimation of f() and E[Y|X, W] a random forest is used.
 Original DML estimator assuming strict exogeneity is used here. Not accounting for any lag/panel structure.
 '''
 #set how many folds are used in cross-fitting
-n_folds=2
+n_folds=5
 #fit linear DML model to train data
 tik=time.time()
 spec1=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=n_folds)
@@ -215,7 +222,6 @@ spec1_inf=spec1.const_marginal_effect_inference(X=x_test).summary_frame()
 print(len(spec1_inf[spec1_inf['pvalue']<=0.05]))
 #get ATE 
 spec1_ate=spec1.ate_inference(X=x_test)
-#insignificant! (nice)
 #! meam testing area 
 meams=eu().get_all_meam(spec1, x_test)
 for var in x_cols: 

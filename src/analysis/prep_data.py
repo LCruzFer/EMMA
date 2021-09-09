@@ -82,8 +82,14 @@ def create_dummies(df, id_col):
 ms_data=pd.read_csv(data_in/'Misra_Surico_Data'/'2008_data.csv')
 #reorder this dataframe to make it easier to read 
 ms_data=reorder_df(['custid', 'interviewno', 'newid', 'QINTRVMO', 'QINTRVYR'], ms_data)
+#load parker et al data 
+parkeretal=pd.read_stata(data_in/'Parkeretal_Data.dta')
+parkeretal['newid']=[int(str(x)+str(y)) for x, y in zip(parkeretal['newid'], parkeretal['intview'])]
+#merge some variables from Parker et al that are not included in MS 
+ms_data=ms_data.merge(parkeretal[['newid', 'liqassii']], on='newid')
 #replace NaN with 0 
 ms_data=ms_data.replace(np.nan, 0)
+
 #* General cleaning
 #drop variables that are included twice - keep MS version because of better naming
 nodoubles=ms_data.drop(['AGE_REF', 'PERSLT18'], axis=1)
@@ -169,8 +175,16 @@ panel_lags=panel_dropped[panel_dropped['count']==3]
 #then remove rows that NaN in rows of lag
 panel_nona_lags=panel_lags.dropna(subset=[col for col in panel_lags.columns if '_lag' in col])
 
+#* Generate MS dataset (only containing their controls)
+ms_data_reduced=ms_data[['custid', 'chTOTexp', 'RBTAMT','AGE', 'chchildren', 'chadults']+['const'+str(i) for i in range(0, 15)]]
+ms_data_reduced['chFAM_SIZE']=ms_data_reduced['chchildren']+ms_data_reduced['chadults']
+ms_data_reduced=ms_data_reduced.drop(['chchildren', 'chadults'], axis=1)
+ms_data_reduced['sqAGE']=ms_data_reduced['AGE']**2
+ms_data_reduced['sqchFAM_SIZE']=ms_data_reduced['chFAM_SIZE']**2
+
 #* Write to CSV
+ms_data_reduced.to_csv(data_out/'transformed'/'ms_setup.csv', index=False)
 cleaned_w_dummies.to_csv(data_out/'transformed'/'cleaned_dummies.csv', index=False)
 panel.to_csv(data_out/'transformed'/'panel_cleaned.csv', index=False)
-print('Finished!')
 panel_nona_lags.to_csv(data_out/'transformed'/'panel_w_lags.csv', index=False)
+print('Finished!')

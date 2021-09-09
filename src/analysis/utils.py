@@ -14,6 +14,13 @@ class data_utils:
     def __init__(self): 
         pass
 
+    def drop_vars(self, df, word): 
+        '''
+        Drop all columns of df that have 'word' in their name.
+        '''
+        df=df.drop([col for col in df.columns if word in col], axis=1)
+        return df
+    
     def get_expnames(self, df): 
         '''
         Filter self.df for all expenditure variables.
