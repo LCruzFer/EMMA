@@ -199,9 +199,7 @@ class estim_utils:
             #and save it in y_axis array 
             y_axis[i, :]=np.array((avg_cilow, avg_cate, avg_ciup))
             #print share done so far 
-            share=i/len(x_axis) 
-            if math.ceil(share)%5==0: 
-                print(f'{share} are done')
+            print(i/len(x_axis))
         #make the PDP w/ CI
         colors=['red', 'blue', 'red']
         fig, ax=plt.subplots()
