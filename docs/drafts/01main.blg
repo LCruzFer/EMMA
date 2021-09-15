@@ -4,47 +4,46 @@ The top-level auxiliary file: 01main.aux
 A level-1 auxiliary file: coverpage.aux
 The style file: ecta.bst
 Database file #1: 08references.bib
-Warning--empty year in PanelDML; set to ????
 Warning--empty journal in PanelDML
-You've used 2 entries,
+You've used 5 entries,
             2849 wiz_defined-function locations,
-            609 strings with 5177 characters,
-and the built_in function-call counts, 1617 in all, are:
-= -- 110
-> -- 127
-< -- 0
-+ -- 41
-- -- 39
-* -- 149
-:= -- 258
-add.period$ -- 4
-call.type$ -- 2
-change.case$ -- 22
-chr.to.int$ -- 2
-cite$ -- 4
-duplicate$ -- 115
-empty$ -- 85
-format.name$ -- 47
-if$ -- 307
+            629 strings with 5832 characters,
+and the built_in function-call counts, 3525 in all, are:
+= -- 259
+> -- 241
+< -- 1
++ -- 79
+- -- 72
+* -- 320
+:= -- 557
+add.period$ -- 10
+call.type$ -- 5
+change.case$ -- 46
+chr.to.int$ -- 5
+cite$ -- 6
+duplicate$ -- 260
+empty$ -- 205
+format.name$ -- 92
+if$ -- 675
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 23
-newline$ -- 11
-num.names$ -- 10
-pop$ -- 60
+missing$ -- 51
+newline$ -- 20
+num.names$ -- 25
+pop$ -- 114
 preamble$ -- 1
-purify$ -- 21
+purify$ -- 44
 quote$ -- 0
-skip$ -- 31
+skip$ -- 77
 stack$ -- 0
-substring$ -- 30
-swap$ -- 56
-text.length$ -- 0
+substring$ -- 86
+swap$ -- 129
+text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 24
-warning$ -- 2
-while$ -- 7
+type$ -- 60
+warning$ -- 1
+while$ -- 18
 width$ -- 0
-write$ -- 27
-(There were 2 warnings)
+write$ -- 63
+(There was 1 warning)

@@ -1,6 +1,12 @@
-\begin{thebibliography}{2}
+\begin{thebibliography}{5}
 \newcommand{\enquote}[1]{``#1''}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[\protect\citeauthoryear{Bunn, Le~Roux, Reinold, and Surico}{Bunn
+  et~al.}{2018}]{bunn_etal}
+\textsc{Bunn, P., J.~Le~Roux, K.~Reinold, and P.~Surico} (2018): \enquote{The
+  consumption response to positive and negative income shocks,} \emph{Journal
+  of Monetary Economics}, 96, 1--15.
 
 \bibitem[\protect\citeauthoryear{Chernozhukov, Chetverikov, Demirer, Duflo,
   Hansen, Newey, and Robins}{Chernozhukov et~al.}{2017}]{DML2017}
@@ -9,10 +15,23 @@
   {Learning} for {Treatment} and {Causal} {Parameters},} \emph{arXiv:1608.00060
   [econ, stat]}, arXiv: 1608.00060.
 
+\bibitem[\protect\citeauthoryear{Fagereng, Holm, and Natvik}{Fagereng
+  et~al.}{forthcoming}]{fagereng_etal}
+\textsc{Fagereng, A., M.~B. Holm, and G.~J. Natvik} (forthcoming):
+  \enquote{{MPC} {Heterogeneity} and {Household} {Balance} {Sheets},}
+  \emph{American Economic Journal: Macroeconomics}.
+
+\bibitem[\protect\citeauthoryear{Golosov, Graber, Mogstad, and
+  Novgorodsky}{Golosov et~al.}{2021}]{golosov_etal}
+\textsc{Golosov, M., M.~Graber, M.~Mogstad, and D.~Novgorodsky} (2021):
+  \enquote{How {Americans} {Respond} to {Idiosyncratic} and {Exogenous}
+  {Changes} in {Household} {Wealth} and {Unearned} {Income},} Working {Paper}
+  29000, National Bureau of Economic Research, series: Working Paper Series.
+
 \bibitem[\protect\citeauthoryear{Semenova, Goldman, Ai, Chernozhukov, Taddy,
-  and Ai}{Semenova et~al.}{????}]{PanelDML}
+  and Ai}{Semenova et~al.}{2021}]{PanelDML}
 \textsc{Semenova, V., M.~Goldman, M.~Ai, V.~Chernozhukov, M.~Taddy, and M.~Ai}
-  (????): \enquote{Orthogonal {Machine} {Learning} for {Demand} {Estimation}:
+  (2021): \enquote{Orthogonal {Machine} {Learning} for {Demand} {Estimation}:
   {High} {Dimensional} {Causal} {Inference} in {Dynamic} {Panels},} 66.
 
 \end{thebibliography}
