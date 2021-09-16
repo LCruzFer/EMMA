@@ -5,45 +5,45 @@ A level-1 auxiliary file: coverpage.aux
 The style file: ecta.bst
 Database file #1: 08references.bib
 Warning--empty journal in PanelDML
-You've used 5 entries,
+You've used 7 entries,
             2849 wiz_defined-function locations,
-            629 strings with 5832 characters,
-and the built_in function-call counts, 3525 in all, are:
-= -- 259
-> -- 241
-< -- 1
-+ -- 79
-- -- 72
-* -- 320
-:= -- 557
-add.period$ -- 10
-call.type$ -- 5
-change.case$ -- 46
-chr.to.int$ -- 5
-cite$ -- 6
-duplicate$ -- 260
-empty$ -- 205
-format.name$ -- 92
-if$ -- 675
+            642 strings with 6201 characters,
+and the built_in function-call counts, 4876 in all, are:
+= -- 374
+> -- 305
+< -- 3
++ -- 99
+- -- 90
+* -- 445
+:= -- 760
+add.period$ -- 14
+call.type$ -- 7
+change.case$ -- 60
+chr.to.int$ -- 7
+cite$ -- 8
+duplicate$ -- 354
+empty$ -- 300
+format.name$ -- 122
+if$ -- 941
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 51
-newline$ -- 20
-num.names$ -- 25
-pop$ -- 114
+missing$ -- 69
+newline$ -- 26
+num.names$ -- 35
+pop$ -- 146
 preamble$ -- 1
-purify$ -- 44
+purify$ -- 58
 quote$ -- 0
-skip$ -- 77
+skip$ -- 107
 stack$ -- 0
-substring$ -- 86
-swap$ -- 129
+substring$ -- 163
+swap$ -- 179
 text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 60
+type$ -- 84
 warning$ -- 1
-while$ -- 18
+while$ -- 28
 width$ -- 0
-write$ -- 63
+write$ -- 87
 (There was 1 warning)
