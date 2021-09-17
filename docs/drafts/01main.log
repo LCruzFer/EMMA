@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2022/dev) (preloaded format=pdflatex 2021.8.26)  16 SEP 2021 17:14
+This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2022/dev) (preloaded format=pdflatex 2021.8.26)  17 SEP 2021 13:36
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -311,27 +311,32 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 {/usr/local/texlive/2021/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]) (./02introduction_2.tex) [1
 
 
-] [2] (./03literature_2.tex [3] [4]) (./04method_2.tex [5]
+] [2] (./03literature_2.tex [3] [4]
+Underfull \hbox (badness 10000) in paragraph at lines 13--17
+
+ []
+
+[5]) (./04method_2.tex [6]
 Overfull \hbox (4.59305pt too wide) in paragraph at lines 6--7
 []\OT1/cmr/m/n/12 see: $\OT1/cmtt/m/n/12 https : / / econml . azurewebsites . net / _autosummary / econml . dml . DML . html #
  []
 
-[6] [7] [8] [9] [10]) (./05data.tex) (./06estim_and_results.tex) (./07conclusion.tex) [11] (./01main.bbl) [12
+[7] [8] [9] [10] [11]) (./05data.tex) (./06estim_and_results.tex) (./07conclusion.tex) [12] (./01main.bbl) [13
 
 ] (./09appendix.tex) (./01main.aux (./coverpage.aux)) ) 
 Here is how much of TeX's memory you used:
  4534 strings out of 478542
  66311 string characters out of 5850387
- 388799 words of memory out of 5000000
+ 388800 words of memory out of 5000000
  22384 multiletter control sequences out of 15000+600000
  411218 words of font info for 54 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 62i,12n,69p,3287b,299s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 62i,12n,69p,3287b,301s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on 01main.pdf (13 pages, 223199 bytes).
+Output written on 01main.pdf (14 pages, 225473 bytes).
 PDF statistics:
- 123 PDF objects out of 1000 (max. 8388607)
- 77 compressed objects within 1 object stream
+ 126 PDF objects out of 1000 (max. 8388607)
+ 79 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
