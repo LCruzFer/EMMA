@@ -59,8 +59,6 @@ def tune_rf(params, X, Y):
 #! DATA
 #*#########################
 variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
-#! what to do about all the NaN? 
-variables=variables.replace(np.nan, 0)
 #choose how many observations in test set
 n_test=1000
 #choose treatment 

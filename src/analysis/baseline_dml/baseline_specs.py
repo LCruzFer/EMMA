@@ -1,25 +1,26 @@
 import time
 import sys
 from pathlib import Path
+from typing import AsyncGenerator
+from numpy.lib.shape_base import column_stack
 import pandas as pd
 import numpy as np
-from econml.dml import LinearDML, CausalForestDML, SparseLinearDML
-from econml.inference import BootstrapInference
-from sklearn.ensemble import RandomForestRegressor as RFR
-from sklearn.preprocessing import PolynomialFeatures
 import itertools
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import PolynomialFeatures
+
 #* set system path to import utils
 wd=Path.cwd()
 sys.path.append(str(wd.parent))
-from utils import data_utils as du 
-from utils import estim_utils as eu
+from utils import data_utils
+from utils import fitDML
 
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
 
 '''
-This file estimates the 3 baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
+This file estimates the baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
 '''
 
 #*#########################
@@ -30,154 +31,59 @@ This file estimates the 3 baseline specifications of the linear DML model to est
 #TODO: how to control for different channels 
 #TODO: what is X, what is W? 
 #TODO: streamline for final estimation
-#TODO: turn different estimation functions into one class such that data only supplied once to class 
+#IDEA: control for how many months after announcement rebate was received 
+
 #*#########################
 #! FUNCTIONS
 #*#########################
-def fit_linDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds): 
+def pdp_plot(x_axis, y_axis, var): 
     '''
-    Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
+    Create partial dependence plot using x- and y-axis values taken from estimation. 
+    *x_axis=1-dimensional numpy array, x-axis values
+    *y_axis=2-dimensional numpy array, y-axis values (point estimate and CI bounds)
+    *var=str; variable name for title and axis
+    '''
+    #set up figure
+    fig, ax=plt.subplots()
+    #set up colors
+    colors=['red', 'blue', 'red']
+    #set up labels
+    labels=['Lower CI', 'Point Estimate', 'Upper CI']
+    for i, col, lab in zip(range(y_axis.shape[1]-1), colors, labels):
+        ax.plot(x_axis, y_axis[:, i], color=col, label=lab)
+    #add legend
+    ax.legend(bbox_to_anchor=(1,1), loc='upper left')
+    #add shaded area between CI lines
+    ax.fill_between(x_axis, y_axis[:, 0], y_axis[:, 2], color='orangered', alpha=0.2, where=y_axis[:, 4]>=0.1)
+    ax.fill_between(x_axis, y_axis[:, 0], y_axis[:, 2], color='mediumseagreen', alpha=0.2, where=y_axis[:, 4]<=0.1)
+    #set axis labels and title 
+    ax.set_xlabel(var)
+    ax.set_ylabel('MPC')
+    ax.set_title(f'Partial Dependence Plot for {var}')
+    
+    return fig, ax
 
-    *Y=outcome data 
-    *T=treatment data 
-    *W=confounders that have no effect on treatment effect 
-    *X=confounders that can have effect on treatment effect 
-    *params=parameters for random forest
-    *n_test=size of test set
+def coef_var_correlation(df, coefs): 
     '''
-    #initialize DML model with tuned parameters
-    linDML=LinearDML(model_y=RFR(n_estimators=1000,
-                                max_depth=params_Y['max_depth'],       
-                                min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                    model_t=RFR(n_estimators=1000,
-                                max_depth=params_T['max_depth'],    
-                                min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
-                    cv=folds, fit_cate_intercept=True, 
-                    random_state=2021
-                    )
-    print('Model set up!')
-    #fit to train data 
-    linDML.fit(y_train, t_train, X=x_train, W=w_train, 
-            #bootstrapped or asymptotic inference?
-                #inference=BootstrapInference(n_bootstrap_samples=50)
-                )
-    print('Model fitted!')
-    return linDML
-
-def fit_cfDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds): 
+    Calculate Pearson's coefficients of correlation between observables and individual treatment effects. 
+    
+    *df=pd dataframe; X test data 
+    *coefs=pd series; treatment effect coefficients
     '''
-    Estimate a nonparametric model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
-
-    *Y=outcome data 
-    *T=treatment data 
-    *W=confounders that have no effect on treatment effect 
-    *X=confounders that can have effect on treatment effect 
-    *params=parameters for random forest
-    *n_test=size of test set
-    '''
-    #initialize DML model with tuned parameters
-    cfDML=CausalForestDML(model_y=RFR(n_estimators=300,
-                                max_depth=params_Y['max_depth'],       
-                                min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                    model_t=RFR(n_estimators=300,
-                                max_depth=params_T['max_depth'],    
-                                min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
-                    #cv=folds,
-                    random_state=2021, 
-                    n_estimators=5000, 
-                    drate=False, 
-                    )
-    print('Model set up!')
-    #fit to train data 
-    cfDML.fit(y_train, t_train, X=x_train, W=w_train, 
-            #bootstrapped or asymptotic inference?
-                #inference=BootstrapInference(n_bootstrap_samples=50)
-                )
-    print('Model fitted!')
-    return cfDML
-
-def fit_sparseDML(y_train, t_train, x_train, w_train, params_Y, params_T, folds, feat): 
-    '''
-    Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
-
-    *Y=outcome data 
-    *T=treatment data 
-    *W=confounders that have no effect on treatment effect 
-    *X=confounders that can have effect on treatment effect 
-    *params=parameters for random forest
-    *n_test=size of test set
-    '''
-    #initialize DML model with tuned parameters
-    spDML=SparseLinearDML(model_y=RFR(n_estimators=1000,
-                                max_depth=params_Y['max_depth'],       
-                                min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                    model_t=RFR(n_estimators=1000,
-                                max_depth=params_T['max_depth'],    
-                                min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
-                    featurizer=feat,
-                    cv=folds, fit_cate_intercept=False, 
-                    random_state=2021, 
-                #! do they converge now?
-                    max_iter=2000
-                    )
-    print('Model set up!')
-    #fit to train data 
-    spDML.fit(y_train, t_train, X=x_train, W=w_train, 
-            #bootstrapped or asymptotic inference?
-                #inference=BootstrapInference(n_bootstrap_samples=50)
-                )
-    print('Model fitted!')
-    return spDML
+    #save correlations in dict
+    corrs={}
+    #for each column in X data calculate correlation with coefficients
+    for col in df.columns: 
+        corrs[col]=np.corrcoef(df[col], coefs)[0, 1]
+    
+    return corrs
 
 #*#########################
 #! DATA
 #*#########################
 #read in data
-#variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
-#variables=variables.replace(np.nan, 0)
-#panel structure data 
-variables=pd.read_csv(data_out/'transformed'/'panel_w_lags.csv')
+variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
 print('Variables loaded')
-#!right now drop all totbalance and maritalstat variables 
-variables=du().drop_vars(variables, 'totbalance')
-variables=du().drop_vars(variables, 'maritalstat')
-#* Choosing treatment and outcome
-#choose outcome 
-outcome='chTOTexp'
-#choose treatment
-treatment='RBTAMT'
-
-#* Splitting Data into test and train sample
-#split into test and train data and then create subset dataframes
-y_train, y_test, r_train, r_test, z_train, z_test=du().create_test_train(variables, 'custid', outcome, treatment, n_test=500)
-#merge lags of treatment and rebate back on Z data for spec 3, others do not include them
-z_train_spec3=z_train.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
-z_test_spec3=z_test.merge(variables[['newid', outcome+'_lag', treatment+'_lag']], on='newid')
-#drop unnecessary variables 
-dropvars=['count', 'payment', 'notowned']
-z_train=z_train.drop(dropvars, axis=1)
-z_test=z_test.drop(dropvars, axis=1)
-#* Splitting Z into X and W (Spec 1 and 2)
-#what should X be? 
-#reasonable: AGE (life cycle model), fam_size (more precautionary saving, e.g. for college of kids -> see what reaction of education spending is for families),
-#liqassii (liquidity is key), married (??), income 
-#consider a subset of observables as X; for definitions see MS_columnexplainers.numbers
-x_cols=['AGE', 'FAM_SIZE', 'liqassii', 'married', 'tot_fam_inc']
-#split Z into X and W data
-x_train, w_train=du().split_XW(Z=z_train, x_columns=x_cols)
-x_test, w_test=du().split_XW(Z=z_test, x_columns=x_cols)
-#drop id variables from w data 
-w_train=w_train.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
-w_test=w_test.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
-
-#* Splitting Z into X and W (Spec 3)
-#split Z into X and W data
-x_train_spec3, w_train_spec3=du().split_XW(Z=z_train, x_columns=x_cols)
-x_test_spec3, w_test_spec3=du().split_XW(Z=z_test, x_columns=x_cols)
-#drop id variables from w data 
-w_train_spec3=w_train_spec3.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
-w_test_spec3=w_test_spec3.drop(['custid', 'year', 'interviewno', 'newid', 'month'], axis=1)
-print('Data is ready!')
 
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
@@ -194,123 +100,100 @@ best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparam
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
 print('Hyperparameters ready')
 
-#* save train and test set of X, Y and R for plotting and other stuff later on 
-x_test.to_csv(data_out/'transformed'/'x_test.csv')
-y_test.to_csv(data_out/'transformed'/'y_test.csv')
-r_test.to_csv(data_out/'transformed'/'r_test.csv')
-print('Data saved')
+#* Month constants used in every spec 
+#relative to first month
+constants=['const'+str(i) for i in range(1, 15)]
 
 #*#########################
-#! ESTIMATION: Specification 1
+#! Specification 1: using MS specification
 #*#########################
-'''
-Here consider DML model with semi-parametric specification: 
-Y_{it}=\theta*R_{it} + g(X_{it}, W_{it}) + U_{it}
-R_{it}=f(X_{it}, W_{it}) + V_{it}
-For estimation of f() and E[Y|X, W] a random forest is used.
-Original DML estimator assuming strict exogeneity is used here. Not accounting for any lag/panel structure.
-'''
-#set how many folds are used in cross-fitting
-n_folds=5
-#fit linear DML model to train data
-tik=time.time()
-spec1=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=n_folds)
-tok=time.time() 
-print(tok-tik)
-#get constant marginal CATE summary df
-spec1_inf=spec1.const_marginal_effect_inference(X=x_test).summary_frame()
-print(len(spec1_inf[spec1_inf['pvalue']<=0.05]))
-#get ATE 
-spec1_ate=spec1.ate_inference(X=x_test)
-#! meam testing area 
-meams=eu().get_all_meam(spec1, x_test)
-for var in x_cols: 
-    print(var, len(meams[meams['pvalue_'+var]<=0.1]))
-#write to csv 
-spec1_inf.to_csv(data_out/'results'/'cate_spec1.csv', index=False)
+
+#*###### 
+#! SETUP
+#specification 1 uses all available observations and hence only variables that have no missings 
+#* Choosing treatment, outcome and x_cols
+#choose outcome 
+outcome='chTOTexp'
+#choose treatment
+treatment='RBTAMT'
+#choose x_cols
+ms_xcols=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
+#clean data and keep only these variables 
+spec1_df=variables[['custid']+[outcome, treatment]+ms_xcols+constants]
+#set up DML class
+spec1_est=fitDML(spec1_df, treatment, outcome, ms_xcols)
+print('Spec 1 is set up.')
+
+#*###### 
+#! ESTIMATION
+
+#* Estimation: Linear
+#fit linear model 
+folds=5
+spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec1_est.lin_cate_df
+
+#* Estimation: Causal Forest 
+#fit linear model 
+folds=5
+spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec1_est.cfDML.const_marginal_ate_interval(X=spec1_est.x_test, alpha=0.1)
+
+x_axis_cf, y_axis_cf=spec1_est.pdp('AGE', model='cf', alpha=0.1)
+
+pdp_plot(x_axis_cf, y_axis_cf, 'AGE')
+
+#* Estimation: Sparse OLS
+#fit linear model 
+folds=5
+feats=PolynomialFeatures(degree=2, include_bias=False)
+spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec1_est.sp_cate_df
+
+#*###### 
+#! ANALYSIS
+#* PDP and ICE plots
+#calculate PDP values
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
 
 #*#########################
-#! ESTIMATION: Specification 2
+#! Specification 2: using more variables 
 #*#########################
-'''
-Panel DML estimator by Chernozhukov et al (2021) is used here but without lags, i.e. using algorithm but still assuming strict exogeneity - which should lead to everything working out because less strict assumption.
-'''
-#get folds for first-stage cross fitting
-#need to reset indices, ow LinearDML's fold arguments makes problems
-x_train=x_train.reset_index(drop=True) 
-x_test=x_test.reset_index(drop=True)
-w_train=w_train.reset_index(drop=True)
-w_test=w_test.reset_index(drop=True) 
-y_train=y_train.reset_index(drop=True)
-y_test=y_test.reset_index(drop=True)
-#get folds
-fs_folds=eu().cross_fitting_folds(w_train, 5, 6, 'quarter')
+#specification 1 uses all available observations and hence only variables that have no missings 
+#* Choosing treatment, outcome and x_cols
+#choose outcome 
+outcome='chTOTexp'
+#choose treatment
+treatment='RBTAMT'
+#choose x_cols
+spec2_xcols=['AGE', 'AGE_sq','chFAM_SIZE', 'chFAM_SIZE_sq', 'liqassii', 'married', 'FSALARYM']
+#only keep relevant variables 
+spec2_df=variables[['custid']+[treatment, outcome]+spec2_xcols+constants]
+spec2_df=spec2_df.dropna()
+#set up DML class
+spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
+print('Spec 2 all set up.')
 
-#fit linear DML model to train data
-tik=time.time()
-spec2=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=fs_folds)
-tok=time.time() 
-print(tok-tik)
-print('Linear DML fitted')
-#get constant marginal CATE summary df
-spec2_inf=spec2.const_marginal_effect_inference(X=x_test).summary_frame()
-#write to csv 
-spec2_inf.to_csv(data_out/'results'/'cate_spec2.csv')
+#* Estimation: Linear
+#fit linear model 
+folds=5
+spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec2_est.linDML.const_marginal_ate_inference(X=spec2_est.x_test).stderr_mean
 
-#*#########################
-#! ESTIMATION: Specification 3
-#*#########################
-'''
-Panel DML estimator by Chernozhukov et al (2021) with lag structure.
-'''
-#get folds for first-stage cross fitting
-#need to reset indices, ow LinearDML's fold arguments makes problems
-x_train=x_train.reset_index(drop=True) 
-x_test=x_test.reset_index(drop=True)
-w_train=w_train.reset_index(drop=True)
-w_test=w_test.reset_index(drop=True) 
-y_train=y_train.reset_index(drop=True)
-y_test=y_test.reset_index(drop=True)
-#get folds
-fs_folds=eu().cross_fitting_folds(w_train, 5, 6, 'quarter')
+spec2_est.lin_cate_df['ci_lower'].mean()
+spec2_est.pdp_ice('AGE', 'lin')
+pdp_plot()
+#* Estimation: Causal Forest 
+#fit linear model 
+folds=5
+spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+test=spec2_est.cf_cate_df
+test['significant']=(test['pvalue']<0.1).astype(int)
 
-#fit linear DML model to train data
-tik=time.time()
-spec3=fit_linDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=fs_folds)
-tok=time.time() 
-print(tok-tik)
-print('Linear DML fitted')
-#get constant marginal CATE
-spec3_inf=spec3.const_marginal_effect_inference(X=x_test).summary_frame()
-#write to csv 
-spec3_inf.to_csv(data_out/'results'/'cate_spec3.csv')
-
-#*#########################
-#! ESTIMATION: Specification 4
-#*#########################
-#fit Causal Forest DML model to train data
-tik=time.time()
-spec4=fit_cfDML(y_train, r_train, x_train, w_train, best_params_Y, best_params_R, folds=5)
-tok=time.time() 
-print(tok-tik)
-print('CF DML fitted')
-#get constant marginal CATE
-spec4_inf=spec4.const_marginal_effect_inference(X=x_test).summary_frame()
-print(len(spec4_inf[spec4_inf['pvalue']<=0.1]))
-
-eu().pdp(spec4, x_test, 'liqassii')
-#write to csv 
-spec4_inf.to_csv(data_out/'results'/'cate_spec4.csv')
-
-#*#########################
-#! ESTIMATION: Specification 5
-#*#########################
-#use SparseLinearDML and high degree of polynomials of X 
-tik=time.time() 
-spec5=fit_sparseDML(y_train, r_train, x_train, w_train, best_params_Y, 
-                    best_params_R, folds=2, 
-                    feat=PolynomialFeatures(degree=2, include_bias=False))
-tok=time.time() 
-print(tok-tik)
-spec5_inf=spec5.const_marginal_effect_inference(X=x_test).summary_frame()
-print(len(spec5_inf[spec5_inf['pvalue']<=0.1]))
+#* Estimation: Sparse OLS
+#fit linear model 
+folds=5
+feats=PolynomialFeatures(degree=2, include_bias=False)
+spec2_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)

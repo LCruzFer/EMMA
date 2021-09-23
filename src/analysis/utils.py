@@ -2,7 +2,10 @@ import pandas as pd
 import numpy as np 
 import math
 from sklearn.model_selection import train_test_split 
-import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor as RFR
+from sklearn.preprocessing import PolynomialFeatures
+from econml.dml import LinearDML, CausalForestDML, SparseLinearDML
+from econml.inference import BootstrapInference
 
 '''
 This file contains various helper functions for that are done in several files but always involve the same steps - e.g. splitting data into train and test sets or other things.
@@ -69,6 +72,10 @@ class data_utils:
         #remove all rebate or expenditure related variables from confounders data
         z_train=self.drop_exp_rbt(train[[col for col in train.columns if col not in [outcome, treatment]]])
         z_test=self.drop_exp_rbt(test[[col for col in train.columns if col not in [outcome, treatment]]])
+        #then drop idcols from z data 
+        z_train=z_train.drop(idcol, axis=1)
+        z_test=z_test.drop(idcol, axis=1)
+        
         return y_train, y_test, t_train, t_test, z_train, z_test
 
     def split_XW(self, Z, x_columns):
@@ -81,15 +88,11 @@ class data_utils:
         x=Z[x_columns]
         #then get w data 
         w=Z[[col for col in Z.columns if col not in x.columns]]
+        #if no columns in w, set it to None
+        if w.shape[1]==0: 
+            w=None
         return (x, w)
 
-class estim_utils: 
-    '''
-    Class providing tools for estimation steps that are done across different estimation specifications several times.
-    '''
-    def __init__(self): 
-        pass 
-    
     def cross_fitting_folds(self, df, K, T, t_col): 
         '''
         Generate the cross-fitting folds from Chernozhukov et al. (2021) as a list of (train, test) indices. For K folds generate K pairs where each fold is test once and rest are train.
@@ -116,134 +119,214 @@ class estim_utils:
             folds.append((not_k_indices, in_k_indices))
         return folds
 
-    def marginal_effect_at_means(self, model, x_test, var):
+class fitDML(data_utils): 
+    '''
+    This class contains different functions to fit various DML estimators. 
+    Class is initiated with supplying data, treatment and outcome and then splits them into train and test samples and makes necessary cleaning steps.
+    Parent class is du from which we use some functions here.
+    '''
+    def __init__(self, data, treatment, outcome, x_cols, n_test=500): 
         '''
-        Provided a fitted model and test data, this function generates a dataset that has all columns at their means except var column and then calculates the constant marginal effect at the means of this var.
-        *model=fitted DML model
-        *x_test=test data 
-        *var=variable that MEAM should be calculated for 
+        data=pandas df 
+        treatment=string with column name of treatment var 
+        outcome=string with column name of outcome var 
+        x_cols=list with columns names of X variables, rest are considered as W
         '''
+        self.df=data
+        self.treatment=treatment 
+        self.outcome=outcome 
+        self.x_cols=x_cols
+        self.n_test=n_test
+        #create test/train samples
+        self.y_train, self.y_test, self.t_train, self.t_test, self.z_train, self.z_test=super().create_test_train(self.df, 'custid', self.outcome, self.treatment, n_test=self.n_test)
+        #split z data into X and W
+        self.x_train, self.w_train=super().split_XW(Z=self.z_train, x_columns=self.x_cols)
+        self.x_test, self.w_test=super().split_XW(Z=self.z_test, x_columns=self.x_cols)
+        #set up empty dicts for ICE and PDP
+        self.x_axis={}
+        self.y_axis_pdp={'lin': {}, 'cf': {}, 'sp': {}}
+        self.y_axis_ice={'lin': {}, 'cf': {}, 'sp': {}}
+        
+    def fit_linear(self, params_Y, params_T, folds): 
+        '''
+        Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
+
+        *params_Y=parameters for random forest for Y
+        *params_T=parameters for random forest for T
+        *folds=folds for CV, int or list 
+        '''
+        #initialize DML model with tuned parameters
+        self.linDML=LinearDML(model_y=RFR(n_estimators=500,
+                                    max_depth=params_Y['max_depth'],       
+                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                        model_t=RFR(n_estimators=500,
+                                    max_depth=params_T['max_depth'],    
+                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                        cv=folds, fit_cate_intercept=True
+                        )
+        print('Model set up!')
+        #fit to train data 
+        self.linDML.fit(self.y_train, self.t_train, X=self.x_train, W=self.w_train, 
+                #bootstrapped or asymptotic inference?
+                    #inference=BootstrapInference(n_bootstrap_samples=50)
+                    )
+        print('Model fitted!')
+        self.lin_cate_df=self.linDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
+    
+    def fit_cfDML(self, params_Y, params_T, folds): 
+        '''
+        Estimate a nonparametric model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
+
+        *params_Y=parameters for random forest for Y 
+        *params_T=parameters for random forest for T
+        *folds=folds for CV, int or list 
+        '''
+        #initialize DML model with tuned parameters
+        self.cfDML=CausalForestDML(model_y=RFR(n_estimators=500,
+                                    max_depth=params_Y['max_depth'],       
+                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                        model_t=RFR(n_estimators=500,
+                                    max_depth=params_T['max_depth'],    
+                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                        cv=folds,
+                        n_estimators=10000, 
+                        drate=False, 
+                        )
+        print('Model set up!')
+        #fit to train data 
+        self.cfDML.fit(self.y_train, self.t_train, X=self.x_train, W=self.w_train, 
+                #bootstrapped or asymptotic inference?
+                    #inference=BootstrapInference(n_bootstrap_samples=50)
+                    )
+        print('Model fitted!')
+        self.cf_cate_df=self.cfDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
+
+    def fit_sparseDML(self, params_Y, params_T, folds, feat): 
+        '''
+        Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
+
+        *params_Y=parameters for random forest for Y 
+        *params_T=parameters for random forest for T
+        *folds=folds for CV, int or list 
+        *feat=featurizer, how to transform X
+        '''
+        #initialize DML model with tuned parameters
+        self.spDML=SparseLinearDML(model_y=RFR(n_estimators=1000,
+                                    max_depth=params_Y['max_depth'],       
+                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                        model_t=RFR(n_estimators=1000,
+                                    max_depth=params_T['max_depth'],    
+                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                        featurizer=feat,
+                        cv=folds, fit_cate_intercept=False, 
+                    #! do they converge now?
+                        max_iter=2000
+                        )
+        print('Model set up!')
+        #fit to train data 
+        self.spDML.fit(self.y_train, self.t_train, X=self.x_train, W=self.w_train, 
+                #bootstrapped or asymptotic inference?
+                    #inference=BootstrapInference(n_bootstrap_samples=50)
+                    )
+        print('Model fitted!')
+        self.sp_cate_df=self.spDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
+    
+    def selectmodel(self, model): 
+        if model=='lin': 
+            return self.linDML
+        elif model=='cf':
+            return self.cfDML
+        elif model=='sp':
+            return self.spDML
+        else: 
+            raise ValueError('Model must be lin, cf or sp')
+
+    def meam(self, var, model='lin'): 
+        '''
+        Calculate marginal effect at mean (meam) for var. 
+        
+        *var=str, column name of variable in self.df
+        *model=str, choose for which model meam should be calculated
+        '''
+        #first select correct model 
+        estim=self.selectmodel(model=model)
         #get means of X data 
-        means=x_test.mean()
-        means_df=x_test.copy() 
-        for col in x_test.drop(var, axis=1).columns:
+        means=self.x_test.mean()
+        means_df=self.x_test.copy() 
+        for col in self.x_test.drop(var, axis=1).columns:
             means_df[col]=means[col]
         #then calculate MEAM and get inference df
-        meam=model.const_marginal_effect_inference(X=means_df)
-        #then get summary frame 
+        meam=estim.const_marginal_effect_inference(X=means_df).summary_frame()
+        #then get summary frame
         meam_df=meam.summary_frame() 
         
         return meam_df
-
-    def get_all_meam(self, model, x_test): 
-        '''
-        Apply marginal_effect_at_means() to all variables in X test set and combine results in dataframe.
-        *model=fitted econML DML model that can calculate constant_marginal_effects
-        *x_test=test set of X variables
-        '''
-        #get columns of test data 
-        x_cols=list(x_test.columns)
-        #calculate MEAM for first variable in X data to create a df on which rest is later merged 
-        meams=self.marginal_effect_at_means(model, x_test, x_cols[0])
-        meams=meams.rename(columns={col: col+'_'+x_cols[0] for col in meams.columns})
-        #then loop over all variables in x_test and merge the results to meams df 
-        for var in x_cols[1:]: 
-            meam_var=self.marginal_effect_at_means(model, x_test, var)
-            #only keep point estimate, SE and pvalue
-            meam_var=meam_var.rename(columns={col: col+'_'+var for col in meam_var.columns})
-            meams=meams.merge(meam_var, left_index=True, right_index=True)
-        
-        return meams
     
-    def coef_var_correlation(self, df, coefs): 
+    def pdp(self, var, model='lin', alpha=0.1): 
         '''
-        Calculate Pearson's coefficients of correlation between observables and individual treatment effects. 
-        
-        *df=pd dataframe with X data 
-        *coefs=pd series containint treatment effect coefficients
+        Create partial dependence plot and individual conditional expectation y axes for var. 
+        *var=str, column name of variable in self.df
+        *model=str, choose for which model mean should be calculated
         '''
-        #save correlations in dict
-        corrs={}
-        #for each column in X data calculate correlation with coefficients
-        for col in df.columns: 
-            corrs[col]=np.corrcoef(df[col], coefs)[0, 1]
-        
-        return corrs
-
-    def pdp(self, estimator, X, var): 
-        '''
-        Plot partial dependence plot of var for estimator using X data.
-        
-        *estimator=some econml estimator object
-        *X=pandas dfl; data for X
-        *var=str; variable we want to plot pdp for
-        '''
-        #make pdp for values of var in range min(var), max(var)
-        #get bounds 
-        low=min(X[var])
-        high=max(X[var])
-        x_axis=np.arange(low, high, step=1)
-        #set up empty array in which y axis value will be saved
-        y_axis=np.empty((len(x_axis), 3))
-        #for each element of x-axis, replace the var value with it 
+        #first select correct model 
+        estim=self.selectmodel(model=model)
+        #select data 
+        data=self.x_test
+        #get min and max values
+        low=min(data[var])
+        high=max(data[var])
+        #create range 
+        #if binary: range just low and high
+        if (low==0)&(high==1): 
+            x_axis=np.array((0, 1))
+        else: 
+            x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
+        #set up empty array in which y axis values for pdp will be saved
+        y_axis=np.empty((x_axis.shape[0], 5))
         for i, val in enumerate(x_axis):
-            #make a copy that contains new var values
-            X_copy=X.copy()
-            X_copy[var]=val
-            #then get CATE for this set of data 
-            cate_df=estimator.const_marginal_effect_inference(X=X_copy).summary_frame()
-            #then get avg of these predictions and the avg CI
-            avg_cate=cate_df['point_estimate'].mean()
-            avg_cilow=cate_df['ci_lower'].mean() 
-            avg_ciup=cate_df['ci_upper'].mean()
-            #and save it in y_axis array 
-            y_axis[i, :]=np.array((avg_cilow, avg_cate, avg_ciup))
-            #print share done so far 
-            print(i/len(x_axis))
-        #make the PDP w/ CI
-        colors=['red', 'blue', 'red']
-        fig, ax=plt.subplots()
-        for i in range(y_axis.shape[1]):
-            ax.plot(x_axis, y_axis[:, i], color=colors[i])
-        plt.show()
-        
+            #create copy of data
+            copy=data.copy() 
+            #set variable to value
+            copy[var]=val
+            #then get ATE, CIs and stderr at this point
+            ate_inf=estim.const_marginal_ate_inference(X=copy)
+            ate_ci=estim.const_marginal_ate_interval(X=copy, alpha=alpha)
+            y_axis[i, :]=np.array((ate_ci[0], ate_inf.mean_point, ate_ci[1], ate_inf.stderr_mean, ate_inf.pvalue()))
+        #save as attributes of the class as well
+        self.x_axis[var]=x_axis
+        self.y_axis_pdp[model][var]=y_axis
+
         return x_axis, y_axis
-
-
-    def ide(self, estimator, X, var): 
+    
+    def ice(self, var, model='lin'):
         '''
-        Create Individual Conditional Expectation plot for var of estimator using X data.
-        
-        *estimator=some econml estimator object
-        *X=pandas dfl; data for X
-        *var=str; variable we want to plot pdp for
+        Calculate individual conditional expectation values for var. 
+        *var=str, column name of variable in self.df
+        *model=str, choose for which model mean should be calculated
         '''
-        #make pdp for values of var in range min(var), max(var)
-        #get bounds 
-        low=min(X[var])
-        high=max(X[var])
-        x_axis=np.arange(low, high, step=1)
-        #set up empty array in which y axis value will be saved for each individual
-        y_axis=np.empty((len(X), 3, len(x_axis)))
-        #for each element of x-axis, replace the var value with it 
+        #first select correct model 
+        estim=self.selectmodel(model=model)
+        #select data 
+        data=self.x_test
+        #get min and max values
+        low=min(data[var])
+        high=max(data[var])
+        #create range 
+        #if binary: range just low and high
+        if (low==0)&(high==1): 
+            x_axis=np.array((0, 1))
+        else: 
+            x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
+        y_axis=np.empty((x_axis.shape[0], len(data[var]), 5))
         for i, val in enumerate(x_axis):
-            #make a copy that contains new var values
-            X_copy=X.copy()
-            X_copy[var]=val
-            #then get CATE for this set of data 
-            cate_df=estimator.const_marginal_effect_inference(X=X_copy).summary_frame()
-            #and save cate and CI bounds in y_axis
-            y_axis[:, :, i]=np.array((cate_df['ci_lower'], 
-                                    cate_df['point_estimate'], 
-                                    cate_df['ci_upper'])).T
-            #print share done so far 
-            share=i/len(x_axis) 
-            if int(share)%5==0: 
-                print(f'{share} are done')
-        #set up figure 
-        fig, ax=plt.subplots() 
-        #add line of each individual
-        for i in range(len(X)): 
-            ax.plot(x_axis, y_axis[i, 1, :])
-        
-        return fig, x_axis, y_axis
+            #create copy of data
+            copy=data.copy() 
+            #set variable to value
+            copy[var]=val
+            #then get ATE, CIs and stderr at this point
+            cate_df=estim.const_marginal_effect_inference(X=copy)
+            y_axis[i, :, :]=np.array((cate_df['ci_lower'], cate_df['point_estimate'], cate_df['ci_upper'], cate_df['stderr'], cate_df['pvalue'])).T
+        self.x_axis_ice[model][var]=x_axis
+        self.y_axis_ice[model][var]=y_axis
+
+        return x_axis, y_axis
