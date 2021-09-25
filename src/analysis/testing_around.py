@@ -279,3 +279,24 @@ rbt085=cex085.merge(fmli085[['NEWID', 'FINLWT21']], left_on='NEWID', right_on='N
 rbt085['popw']=(4-1)/3*rbt085['FINLWT21']/4 
 
 sum(rbt085['RBTAMT']*rbt085['popw'])
+
+parker['iesp']==1
+parker['esp']>0
+list(parker.columns)
+sum(parker['sample3'])
+
+parker[['newid', 'custid', 'iesp', 'sample3']]
+
+fmli091=pd.read_csv(data_in/'2009_rawdata'/'intrvw09'/'fmli091.csv')
+fmli091['custid']=fmli091['NEWID'].apply(lambda x: int(str(x)[:-1]))
+rbt08=pd.read_csv(data_in/'2008_rawdata'/'expn08'/'rbt08.csv')
+rbt08['custid']=rbt08['NEWID'].apply(lambda x: int(str(x)[:-1]))
+rbt08[rbt08['custid']==197325]
+parker[parker['custid']==197325]
+fmli084=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli084.csv')
+fmli084['custid']=fmli082['NEWID'].apply(lambda x: int(str(x)[:-1]))
+fmli084[fmli084['custid']==197325]
+parker[parker['newid']==1973253]
+fmli091x=pd.read_csv(data_in/'2009_rawdata'/'intrvw09'/'fmli091x.csv')
+fmli091x[fmli091x['NEWID']==1973253]['QINTRVMO']
+

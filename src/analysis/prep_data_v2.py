@@ -65,6 +65,11 @@ def create_dummies(df, id_col):
 #*#########################
 #read in data 
 ms_data=pd.read_csv(data_in/'Misra_Surico_Data'/'2008_data.csv')
+#also read in csv for sample dummies
+parker=pd.read_stata(data_in/'Parkeretal_Data.dta')
+parker['newid']=(parker['newid'].astype(str)+parker['intview'].astype(str)).astype(int)
+#then merge 
+ms_data=ms_data.merge(parker[['newid', 'samplemain', 'sample2', 'sample2a', 'sample3', 'sample4', 'sample', 'sample4l2i']], on='newid', how='left')
 #age and children are included twice - keep MS version 
 ms_data=ms_data.drop(['AGE_REF', 'PERSLT18'], axis=1)
 #load parker et al data for the liquid assets data 
@@ -91,8 +96,10 @@ chvars.remove('children')
 chvars.remove('lastchildren')
 #timetrends 
 timevars=['timetrend', 'const']+['const'+str(i) for i in range(0, 15)]
+#samplevars
+samplevars=['samplemain', 'sample2', 'sample2a', 'sample3', 'sample4', 'sample', 'sample4l2i']
 #other variables 
-othervars=[col for col in ms_data.columns if col not in observables+meta+treatment+chexpvars+lastvars+chvars+expvars+timevars]
+othervars=[col for col in ms_data.columns if col not in observables+meta+treatment+chexpvars+lastvars+chvars+expvars+timevars+samplevars]
 
 #* Dropping Zone
 #drop othervars - not of interest 

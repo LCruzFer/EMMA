@@ -58,32 +58,53 @@ def tune_rf(params, X, Y):
 #*#########################
 #! DATA
 #*#########################
-variables=pd.read_csv(data_out/'transformed'/'cleaned_dummies.csv')
-#choose how many observations in test set
-n_test=1000
-#choose treatment 
+#load data
+variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
+#set treatment
 treatment='RBTAMT'
-#choose outcome 
-outcome='chTOTexp'
-#split and prepare 
-y_train, y_test, r_train, r_test, z_train, z_test=prep_tune_data(variables, outcome, treatment, 1000)
+#set outcomes
+outcomes=['chTOTexp', 'chNDexp', 'chSNDexp','chFDexp','chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
+#constants 
+constants=['const'+str(i) for i in range(1, 15)]
 
 #*#########################
 #! RF TUNING
 #*#########################
-#tune the two random forests and return best parameters 
 #set parameters to look at 
-parameters={'max_depth': np.linspace(1, 30, num=5, dtype=int), 'min_samples_leaf': np.linspace(1, 60, num=10, dtype=int), 'max_features': ['auto', 'sqrt', 'log2']}
-#rf for Y
-best_params_Y=tune_rf(parameters, X=z_train, Y=y_train)
-print('Got RF params for Y')
-#rf for R 
-best_params_R=tune_rf(parameters, X=z_train, Y=r_train)
-print('Got RF params for R')
-#bind both into dataframe 
-params_R_df=pd.DataFrame.from_dict(best_params_R, orient='index').rename(columns={0:'R'})
-params_Y_df=pd.DataFrame.from_dict(best_params_Y, orient='index').rename(columns={0:'Y'})
-#merge into one 
-params_df=params_R_df.merge(params_Y_df, left_index=True, right_index=True)
+parameters={'max_depth': np.linspace(1, 30, num=10, dtype=int), 'min_samples_leaf': np.linspace(1, 60, num=20, dtype=int), 'max_features': ['auto', 'sqrt', 'log2']}
+#set observables for each specification 
+spec1=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']+constants
+spec2=spec1+['married']
+spec3=spec2+['liqassii', 'FINCBTXM', 'FSALARYM']
+spec4=spec3+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
+specs=[spec1, spec2, spec3, spec4]
+#set up dataframe on which results will be merged 
+all_params=pd.DataFrame(index=['max_depth', 'min_samples_leaf', 'max_features'])
+#for each specification, tune random forest for treatment and for each outcome variables
+for i, spec in enumerate(specs):
+    #select data 
+    spec_df=variables[spec+outcomes+[treatment]]
+    spec_df=spec_df.dropna()
+    #get treatment data 
+    treat=spec_df[treatment]
+    #tune forest for treatment
+    best_params_R=tune_rf(parameters, spec_df[spec], treat)
+    #turn into df 
+    params_R_df=pd.DataFrame.from_dict(best_params_R, orient='index').rename(columns={0: treatment+'_spec'+str(i+1)})
+    #merge onto final params df 
+    all_params=all_params.merge(params_R_df, left_index=True, right_index=True)
+    print(f'Treatment params found for spec {i+1}')
+    #then get parameters for each outcome 
+    for outcome in outcomes: 
+        #get outcome data 
+        out=spec_df[outcome]
+        #tune forest for outcome 
+        best_params_Y=tune_rf(parameters, spec_df[spec], out)
+        #turn into df 
+        params_Y_df=pd.DataFrame.from_dict(best_params_Y, orient='index').rename(columns={0: outcome+'_spec'+str(i+1)})
+        #then merge onto final params df
+        all_params=all_params.merge(params_Y_df, left_index=True, right_index=True)
+        print(f'{outcome} params for spec {i+1} found.')
+
 #write into csv 
-params_df.to_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
+all_params.to_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')

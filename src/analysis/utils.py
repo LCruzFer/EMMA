@@ -279,10 +279,14 @@ class fitDML(data_utils):
         #if binary: range just low and high
         if (low==0)&(high==1): 
             x_axis=np.array((0, 1))
-        else: 
-            x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
+        else:
+            #if not binary, make x axis contain each percentile value  
+            pctiles=[int(data[var].quantile(i)) for i in np.round(np.linspace(0, 1, 100), decimals=2)]
+            x_axis=np.array(pctiles)
+#            x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
         #set up empty array in which y axis values for pdp will be saved
         y_axis=np.empty((x_axis.shape[0], 5))
+        #fit model for each value 
         for i, val in enumerate(x_axis):
             #create copy of data
             copy=data.copy() 
@@ -290,7 +294,7 @@ class fitDML(data_utils):
             copy[var]=val
             #then get ATE, CIs and stderr at this point
             ate_inf=estim.const_marginal_ate_inference(X=copy)
-            ate_ci=estim.const_marginal_ate_interval(X=copy, alpha=alpha)
+            ate_ci=ate_inf.conf_int_mean(alpha=alpha)
             y_axis[i, :]=np.array((ate_ci[0], ate_inf.mean_point, ate_ci[1], ate_inf.stderr_mean, ate_inf.pvalue()))
         #save as attributes of the class as well
         self.x_axis[var]=x_axis
@@ -316,7 +320,10 @@ class fitDML(data_utils):
         if (low==0)&(high==1): 
             x_axis=np.array((0, 1))
         else: 
-            x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
+            #if not binary, make x axis contain each percentile value  
+            pctiles=[int(data[var].quantile(i)) for i in np.round(np.linspace(0, 1, 100), decimals=2)]
+            x_axis=np.array(pctiles)
+            #x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
         y_axis=np.empty((x_axis.shape[0], len(data[var]), 5))
         for i, val in enumerate(x_axis):
             #create copy of data

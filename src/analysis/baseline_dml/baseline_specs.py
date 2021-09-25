@@ -26,13 +26,11 @@ This file estimates the baseline specifications of the linear DML model to estim
 #*#########################
 #! IDEAS & TO DOs
 #*#########################
-
 #IDEA: use percentile of rebate size household is in to control for what role the size of the income shock has on MPC
 #TODO: how to control for different channels 
 #TODO: what is X, what is W? 
 #TODO: streamline for final estimation
 #IDEA: control for how many months after announcement rebate was received 
-
 #*#########################
 #! FUNCTIONS
 #*#########################
@@ -84,7 +82,6 @@ def coef_var_correlation(df, coefs):
 #read in data
 variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
 print('Variables loaded')
-
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
 hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
@@ -99,101 +96,238 @@ hyperparams.loc[2, 'Y']=int(hyperparams.loc[2, 'Y'])
 best_params_R={param: val for param, val in zip(hyperparams['param'], hyperparams['R'])}
 best_params_Y={param: val for param, val in zip(hyperparams['param'], hyperparams['Y'])}
 print('Hyperparameters ready')
-
 #* Month constants used in every spec 
 #relative to first month
 constants=['const'+str(i) for i in range(1, 15)]
-
-#*#########################
-#! Specification 1: using MS specification
-#*#########################
-
-#*###### 
-#! SETUP
-#specification 1 uses all available observations and hence only variables that have no missings 
-#* Choosing treatment, outcome and x_cols
+#! SET TREATMENT AND OUTCOME
+#set for all specifications
 #choose outcome 
 outcome='chTOTexp'
 #choose treatment
 treatment='RBTAMT'
-#choose x_cols
-ms_xcols=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
-#clean data and keep only these variables 
-spec1_df=variables[['custid']+[outcome, treatment]+ms_xcols+constants]
-#set up DML class
-spec1_est=fitDML(spec1_df, treatment, outcome, ms_xcols)
-print('Spec 1 is set up.')
 
-#*###### 
-#! ESTIMATION
+#*#########################
+#! Specification 1: using MS specification
+#*#########################
+#specification 1 uses all available observations and hence only variables that have no missings 
+#!only for comparison reasons
+#* Setup
+#choose x and w columns
+spec1_xcols=['AGE']
+spec1_wcols=['AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
+#! FULL SAMPLE
+#clean data and keep only these variables 
+subset=variables[variables['comp_samp']==1]
+spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
+#set up DML class
+spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
+print('Spec 1 is set up.')
 
 #* Estimation: Linear
 #fit linear model 
 folds=5
 spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec1_est.lin_cate_df
-
 #* Estimation: Causal Forest 
 #fit linear model 
 folds=5
 spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec1_est.cfDML.const_marginal_ate_interval(X=spec1_est.x_test, alpha=0.1)
-
-x_axis_cf, y_axis_cf=spec1_est.pdp('AGE', model='cf', alpha=0.1)
-
-pdp_plot(x_axis_cf, y_axis_cf, 'AGE')
-
 #* Estimation: Sparse OLS
 #fit linear model 
 folds=5
 feats=PolynomialFeatures(degree=2, include_bias=False)
 spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec1_est.sp_cate_df
 
-#*###### 
-#! ANALYSIS
-#* PDP and ICE plots
-#calculate PDP values
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
-
-#*#########################
-#! Specification 2: using more variables 
-#*#########################
-#specification 1 uses all available observations and hence only variables that have no missings 
-#* Choosing treatment, outcome and x_cols
-#choose outcome 
-outcome='chTOTexp'
-#choose treatment
-treatment='RBTAMT'
-#choose x_cols
-spec2_xcols=['AGE', 'AGE_sq','chFAM_SIZE', 'chFAM_SIZE_sq', 'liqassii', 'married', 'FSALARYM']
-#only keep relevant variables 
-spec2_df=variables[['custid']+[treatment, outcome]+spec2_xcols+constants]
-spec2_df=spec2_df.dropna()
+#! ONLY HH THAT RECEIVED REBATE
+#* Setup
+#clean data and keep only these variables 
+subset=variables[variables['sample2']==1]
+spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
 #set up DML class
-spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
-print('Spec 2 all set up.')
-
+spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
+print('Spec 1 is set up.')
 #* Estimation: Linear
 #fit linear model 
 folds=5
-spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec2_est.linDML.const_marginal_ate_inference(X=spec2_est.x_test).stderr_mean
-
-spec2_est.lin_cate_df['ci_lower'].mean()
-spec2_est.pdp_ice('AGE', 'lin')
-pdp_plot()
+spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 #* Estimation: Causal Forest 
 #fit linear model 
 folds=5
-spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-test=spec2_est.cf_cate_df
-test['significant']=(test['pvalue']<0.1).astype(int)
-
+spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 #* Estimation: Sparse OLS
 #fit linear model 
 folds=5
 feats=PolynomialFeatures(degree=2, include_bias=False)
+spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+
+#*###### 
+#! ANALYSIS
+#* PDP Plots
+#AGE - linear model
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
+#AGE - cf model 
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
+
+#* ICE Plots
+#AGE
+
+#*#########################
+#! Specification 2: Add Marriage 
+#*#########################
+#spec 2 uses only spec 1 variables plus marriage status 
+
+#! FULL SAMPLE
+#* Setup
+#choose x_cols
+spec2_xcols=spec1_xcols+['married']
+spec2_wcols=spec1_wcols
+#only keep relevant variables 
+suebset=variables[variables['compsamp']==1]
+spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+spec2_wcols+constants]
+#set up DML class
+spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
+print('Spec 2 is set up.')
+#* Estimation: Linear
+#fit linear model 
+folds=5
+spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Causal Forest 
+#fit linear model 
+folds=5
+spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Sparse OLS
+#fit linear model 
+folds=5
+#need to define featurizer
+feats=PolynomialFeatures(degree=2, include_bias=False)
 spec2_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+
+#*###### 
+#! ANALYSIS
+#* PDP Plots
+#AGE 
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
+
+#married
+
+#* ICE Plots
+#AGE
+
+#married
+
+#*#########################
+#! Specification 3: Liquidity and salary
+#*#########################
+#add liqudity and salary variables
+#! FULL SAMPLE
+#* Setup
+#choose x_cols 
+spec3_xcols=['AGE', 'liqassii', 'married', 'FINCBTXM']
+spec3_wcols=spec1_wcols+['FSALARYM']
+#only keep relevant variables 
+subset=variables[variables['comp_samp']==1]
+spec3_df=subset[['custid']+[treatment, outcome]+spec3_xcols+spec3_wcols+constants]
+#set up DML class
+spec3_est=fitDML(spec3_df, treatment, outcome, spec3_xcols)
+print('Spec 3 is set up.')
+#* Estimation: Linear
+#fit linear model 
+folds=5
+spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Causal Forest 
+#fit linear model 
+folds=5
+spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Sparse OLS
+#fit linear model 
+folds=5
+#need to define featurizer
+feats=PolynomialFeatures(degree=2, include_bias=False)
+spec3_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+
+#*###### 
+#! ANALYSIS
+#* PDP Plots
+#AGE 
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
+
+#married 
+
+#liquidity 
+
+#salary
+
+#* ICE Plots
+#AGE
+
+#married 
+
+#liquidity 
+
+#salary
+
+#*#########################
+#! Specification 4: All financial variables
+#*#########################
+#spec 4 uses all financial variables (smallest sample available)
+
+#! FULL SAMPLE
+#* Setup
+#choose x_cols 
+spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
+#only keep relevant variables 
+subset=variables[variables['comp_samp']==1]
+spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+constants]
+#set up DML class
+spec4_est=fitDML(spec4_df, treatment, outcome, spec3_xcols)
+print('Spec 4 is set up.')
+#* Estimation: Linear
+#fit linear model 
+folds=5
+spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Causal Forest 
+#fit linear model 
+folds=5
+spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#* Estimation: Sparse OLS
+#fit linear model 
+folds=5
+#need to define featurizer
+feats=PolynomialFeatures(degree=2, include_bias=False)
+spec4_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+
+#*###### 
+#! ANALYSIS
+#* PDP Plots
+#AGE 
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
+x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
+pdp_plot(x_axis_age, y_axis_age, 'AGE')
+
+#married 
+
+#liquidity 
+
+#salary
+
+#mortgage
+
+#owned_m
+
+#* ICE Plots
+#AGE
+
+#married 
+
+#liquidity 
+
+#salary
+
+#mortgage 
+
+#owned_m
