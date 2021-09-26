@@ -58,7 +58,7 @@ def cdf_figure(cdf, l_cdf, u_cdf):
     *u_cdf=cdf of upper bound of ci 
     '''
     fig, ax=plt.subplots()
-    ax.plot(cdf_cme[0], cdf[1])
+    ax.plot(cdf[0], cdf[1])
     ax.plot(l_cdf[0], l_cdf[1])
     ax.plot(u_cdf[0], u_cdf[1])
     

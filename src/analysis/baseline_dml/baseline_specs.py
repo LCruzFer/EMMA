@@ -18,7 +18,7 @@ from utils import fitDML
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
-
+fig_out=wd.parents[2]/'figures'
 '''
 This file estimates the baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
 '''
@@ -34,12 +34,26 @@ This file estimates the baseline specifications of the linear DML model to estim
 #*#########################
 #! FUNCTIONS
 #*#########################
-def pdp_plot(x_axis, y_axis, var): 
+def split_sample(df):
+    ind=np.random.uniform(low=0, high=len(df), size=int(len(df)/2)).astype(int)
+    s1=df.iloc[ind, :]
+    s2=df.iloc[~ind, :]
+    return s1, s2
+
+def z_test(b, b0, se1, se2): 
+    '''
+    Calculate SE test.
+    '''
+    test=(b-b0)/np.sqrt((se1**2+se2**2))
+    return test
+
+def pdp_plot(x_axis, y_axis, var, model): 
     '''
     Create partial dependence plot using x- and y-axis values taken from estimation. 
     *x_axis=1-dimensional numpy array, x-axis values
     *y_axis=2-dimensional numpy array, y-axis values (point estimate and CI bounds)
     *var=str; variable name for title and axis
+    *model=str; model name, use 'linear', 'causal forest' or 'sparse linear' 
     '''
     #set up figure
     fig, ax=plt.subplots()
@@ -57,9 +71,54 @@ def pdp_plot(x_axis, y_axis, var):
     #set axis labels and title 
     ax.set_xlabel(var)
     ax.set_ylabel('MPC')
-    ax.set_title(f'Partial Dependence Plot for {var}')
-    
+    ax.set_title(f'Partial Dependence Plot for {var} using {model} model')
+    figname='PDP_'+var+'_model'
+    plt.savefig(fig_out/'PDP'/figname)
     return fig, ax
+
+def ice_plot(x_axis, y_axis, var, model):
+    '''
+    Create Individal Conditional Expecation plot using x- and y-axis values taken from estimation.
+    *x_axis=1-dimensional numpy array, x-axis values
+    *y_axis=2-dimensional numpy array, y-axis values (point estimate and CI bounds)
+    *var=str; variable name for title and axis
+    *model=str; model name, use 'linear', 'causal forest' or 'sparse linear' 
+    '''
+    #! HERE LOTS OF ROOM FOR IMPROVEMENT
+    fig, ax=plt.subplots()
+    for i in range(y_axis.shape[1]):
+        ax.plot(x_axis, y_axis[:, i, 1])
+    ax.set_xlabel(var)
+    ax.set_ylabel('ICE of MPC')
+    ax.set_title(f'Individual Conditional Expectation Plot for {var} using {model} model')
+    figname='ICE_'+var+'_model'
+    plt.savefig(fig_out/'ICE'/'figname')
+    return fig, ax
+
+def get_cdf(data): 
+    '''
+    Supply numpy array, pandas series or list of data and return proportional value and sorted values, i.e. CDF with x and y values.
+    '''
+    #point estimates sorted by size 
+    pe_sorted=np.sort(np.array(data))
+    #proportional values of sample 
+    proportions=np.arange(len(pe_sorted))/(len(pe_sorted)-1)
+    
+    return(pe_sorted, proportions)
+
+def cdf_figure(cdf, l_cdf, u_cdf): 
+    '''
+    Plot empirical CDF with confidence interval bounds.
+    *cdf=cdf of point estimate 
+    *l_cdf=cdf of lower bound of ci 
+    *u_cdf=cdf of upper bound of ci 
+    '''
+    fig, ax=plt.subplots()
+    ax.plot(cdf[0], cdf[1])
+    ax.plot(l_cdf[0], l_cdf[1])
+    ax.plot(u_cdf[0], u_cdf[1])
+    plt.savefig(fig_out/'CDF'/)
+    return(fig, ax)
 
 def coef_var_correlation(df, coefs): 
     '''
@@ -102,7 +161,7 @@ constants=['const'+str(i) for i in range(1, 15)]
 #! SET TREATMENT AND OUTCOME
 #set for all specifications
 #choose outcome 
-outcome='chTOTexp'
+outcome='chNDexp'
 #choose treatment
 treatment='RBTAMT'
 
@@ -113,38 +172,17 @@ treatment='RBTAMT'
 #!only for comparison reasons
 #* Setup
 #choose x and w columns
-spec1_xcols=['AGE']
-spec1_wcols=['AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
+spec1_xcols=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
+#spec1_wcols=['AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
 #! FULL SAMPLE
 #clean data and keep only these variables 
 subset=variables[variables['comp_samp']==1]
-spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
+#! w cols missing right now because None
+spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+constants]
 #set up DML class
 spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
 print('Spec 1 is set up.')
 
-#* Estimation: Linear
-#fit linear model 
-folds=5
-spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-#* Estimation: Causal Forest 
-#fit linear model 
-folds=5
-spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-#* Estimation: Sparse OLS
-#fit linear model 
-folds=5
-feats=PolynomialFeatures(degree=2, include_bias=False)
-spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-
-#! ONLY HH THAT RECEIVED REBATE
-#* Setup
-#clean data and keep only these variables 
-subset=variables[variables['sample2']==1]
-spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
-#set up DML class
-spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
-print('Spec 1 is set up.')
 #* Estimation: Linear
 #fit linear model 
 folds=5
@@ -161,16 +199,49 @@ spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=fo
 
 #*###### 
 #! ANALYSIS
+
+#* Test ITE-ATE 
+#! need to split test sample into two: one for ATE, one for ITE, ow they are not independent 
+xtest1, xtest2=split_sample(spec1_est.x_test)
+#get ate inference in first sample
+ate_inf=spec1_est.cfDML.const_marginal_ate_inference(X=xtest1)
+#fit model to second sample
+cate_ate_df=spec1_est.cfDML.const_marginal_effect_inference(X=xtest2).summary_frame()
+cate_ate_df['ATE']=ate_inf.mean_point
+#adjust SE of ATE for sample size
+cate_ate_df['ATE_stderr']=ate_inf.stderr_mean/len(xtest1)
+#construct a hypothetical t-test 
+cate_ate_df['zstat_ateite']=z_test(cate_ate_df['point_estimate'], cate_ate_df['ATE'], cate_ate_df['stderr'], cate_ate_df['ATE_stderr'])
+sum(cate_ate_df['zstat_ateite'].abs()>1.64)
+
 #* PDP Plots
-#AGE - linear model
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
-#AGE - cf model 
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
+#linear model 
+for var in spec1_xcols: 
+    x_axis, y_axis=spec1_est.pdp(var, model='lin')
+    pdp_plot(x_axis, y_axis, var, 'linear')
+
+#cf model 
+for var in spec1_xcols:
+    x_axis, y_axis=spec1_est.pdp(var, model='cf')
+    pdp_plot(x_axis, y_axis, var, 'causal forest')
 
 #* ICE Plots
-#AGE
+for var in spec1_xcols: 
+    y_axis.shape
+    var='AGE'
+    x_axis, y_axis=spec1_est.ice(var, model='lin')
+    ice_plot(x_axis, y_axis, var, 'linear')
+#cf model 
+for var in spec1_xcols:
+    var='AGE'
+    x_axis, y_axis=spec1_est.ice(var, model='cf')
+    ice_plot(x_axis, y_axis, var, 'causal forest')
+
+#* CDF Plots 
+cdf_pe=get_cdf(spec1_est.lin_cate_df['point_estimate'])
+cdf_lci=get_cdf(spec1_est.lin_cate_df['ci_lower'])
+cdf_uci=get_cdf(spec1_est.lin_cate_df['ci_upper'])
+cdf_figure(cdf_pe, cdf_lci, cdf_uci)
 
 #*#########################
 #! Specification 2: Add Marriage 
@@ -181,10 +252,11 @@ pdp_plot(x_axis_age, y_axis_age, 'AGE')
 #* Setup
 #choose x_cols
 spec2_xcols=spec1_xcols+['married']
-spec2_wcols=spec1_wcols
+#spec2_wcols=spec1_wcols
 #only keep relevant variables 
-suebset=variables[variables['compsamp']==1]
-spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+spec2_wcols+constants]
+suebset=variables[variables['comp_samp']==1]
+#! no W cols right now !
+spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+constants]
 #set up DML class
 spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
 print('Spec 2 is set up.')
@@ -206,17 +278,25 @@ spec2_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=fo
 #*###### 
 #! ANALYSIS
 #* PDP Plots
-#AGE 
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
-
-#married
+#linear
+for var in spec2_xcols:
+    x_axis, y_axis=spec2_est.pdp(var, model='lin')
+    pdp_plot(x_axis, y_axis, var, 'linear')
+#causal forest 
+for var in spec2_xcols:
+    x_axis, y_axis=spec2_est.pdp(var, model='cf')
+    pdp_plot(x_axis, y_axis, var, 'causal forest')
 
 #* ICE Plots
-#AGE
+for var in spec2_xcols:
+    x_axis, y_axis=spec2_est.ice(var, model='cf')
+    ice_plot(x_axis, y_axis, var, 'causal forest')
 
-#married
+#* CDF Plots 
+cdf_pe=get_cdf(spec2_est.cf_cate_df['point_estimate'])
+cdf_lci=get_cdf(spec2_est.cf_cate_df['ci_lower'])
+cdf_uci=get_cdf(spec2_est.cf_cate_df['ci_upper'])
+cdf_figure(cdf_pe, cdf_lci, cdf_uci)
 
 #*#########################
 #! Specification 3: Liquidity and salary
@@ -225,11 +305,11 @@ pdp_plot(x_axis_age, y_axis_age, 'AGE')
 #! FULL SAMPLE
 #* Setup
 #choose x_cols 
-spec3_xcols=['AGE', 'liqassii', 'married', 'FINCBTXM']
-spec3_wcols=spec1_wcols+['FSALARYM']
+spec3_xcols=['AGE', 'liqassii', 'married', 'FINCBTXM', 'FSALARYM']
 #only keep relevant variables 
-subset=variables[variables['comp_samp']==1]
-spec3_df=subset[['custid']+[treatment, outcome]+spec3_xcols+spec3_wcols+constants]
+subset=variables[variables['l_samp']==1]
+#!no w cols right now
+spec3_df=subset[['custid']+[treatment, outcome]+spec3_xcols+constants]
 #set up DML class
 spec3_est=fitDML(spec3_df, treatment, outcome, spec3_xcols)
 print('Spec 3 is set up.')
@@ -251,25 +331,31 @@ spec3_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=fo
 #*###### 
 #! ANALYSIS
 #* PDP Plots
-#AGE 
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
-
-#married 
-
-#liquidity 
-
-#salary
+#linear
+for var in spec3_xcols:
+    x_axis, y_axis=spec1_est.pdp(var, model='lin')
+    pdp_plot(x_axis, y_axis, var, 'linear')
+#causal forest 
+for var in spec3_xcols:
+    x_axis, y_axis=spec1_est.pdp(var, model='cf')
+    pdp_plot(x_axis, y_axis, var, 'causal forest')
 
 #* ICE Plots
-#AGE
+for var in spec2_xcols:
+    var='AGE'
+    x_axis, y_axis=spec3_est.ice(var, model='lin')
+    ice_plot(x_axis, y_axis, var, 'linear')
 
-#married 
+for var in spec2_xcols:
+    var='AGE'
+    x_axis, y_axis=spec3_est.ice(var, model='cf')
+    ice_plot(x_axis, y_axis, var, 'causal forest')
 
-#liquidity 
-
-#salary
+#* CDF Plots 
+cdf_pe=get_cdf(spec3_est.cf_cate_df['point_estimate'])
+cdf_lci=get_cdf(spec3_est.cf_cate_df['ci_lower'])
+cdf_uci=get_cdf(spec3_est.cf_cate_df['ci_upper'])
+cdf_figure(cdf_pe, cdf_lci, cdf_uci)
 
 #*#########################
 #! Specification 4: All financial variables
@@ -304,30 +390,12 @@ spec4_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=fo
 #*###### 
 #! ANALYSIS
 #* PDP Plots
-#AGE 
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='lin')
-x_axis_age, y_axis_age=spec1_est.pdp('AGE', model='cf')
-pdp_plot(x_axis_age, y_axis_age, 'AGE')
-
-#married 
-
-#liquidity 
-
-#salary
-
-#mortgage
-
-#owned_m
+for var in spec3_xcols:
+    x_axis, y_axis=spec1_est.pdp(var, model='lin')
+    pdp_plot(x_axis, y_axis, var, 'linear')
+#causal forest 
+for var in spec3_xcols:
+    x_axis, y_axis=spec1_est.pdp(var, model='cf')
+    pdp_plot(x_axis, y_axis, var, 'causal forest')
 
 #* ICE Plots
-#AGE
-
-#married 
-
-#liquidity 
-
-#salary
-
-#mortgage 
-
-#owned_m

@@ -311,29 +311,39 @@ class fitDML(data_utils):
         #first select correct model 
         estim=self.selectmodel(model=model)
         #select data 
-        data=self.x_test
+        x_data=self.x_test
+        t_data=self.t_test
         #get min and max values
-        low=min(data[var])
-        high=max(data[var])
+        low=min(x_data[var])
+        high=max(x_data[var])
         #create range 
         #if binary: range just low and high
         if (low==0)&(high==1): 
             x_axis=np.array((0, 1))
         else: 
             #if not binary, make x axis contain each percentile value  
-            pctiles=[int(data[var].quantile(i)) for i in np.round(np.linspace(0, 1, 100), decimals=2)]
+            #use nearest value as need values that exist in data to find index
+            pctiles=[int(x_data[var].quantile(i, interpolation='nearest')) for i in np.round(np.linspace(0, 1, 50), decimals=2)]
+            # #need indices to filter respective treatment data
+            #!don't need those necessarily, I am a bit stupid here
+            # pct_ids=[np.where(x_data[var]==pct) for pct in pctiles]
+            #get x_axis
             x_axis=np.array(pctiles)
             #x_axis=np.linspace(low, high, min(100, int(high-low))).astype(int)
-        y_axis=np.empty((x_axis.shape[0], len(data[var]), 5))
+            #get relevant treatment data 
+            #if multiple observations are at pctile, use them all 
+            # t_pctiles=np.array([np.mean(t_data.iloc[i]) for i in pct_ids])
+        y_axis=np.empty((x_axis.shape[0], len(x_data[var]), 5))
         for i, val in enumerate(x_axis):
+            print(i)
             #create copy of data
-            copy=data.copy() 
+            x_copy=x_data.copy() 
             #set variable to value
-            copy[var]=val
+            x_copy[var]=val
             #then get ATE, CIs and stderr at this point
-            cate_df=estim.const_marginal_effect_inference(X=copy)
+            cate_df=estim.const_marginal_effect_inference(X=x_copy).summary_frame()
             y_axis[i, :, :]=np.array((cate_df['ci_lower'], cate_df['point_estimate'], cate_df['ci_upper'], cate_df['stderr'], cate_df['pvalue'])).T
-        self.x_axis_ice[model][var]=x_axis
+        self.x_axis[var]=x_axis
         self.y_axis_ice[model][var]=y_axis
 
         return x_axis, y_axis
