@@ -10,12 +10,6 @@ sys.path.append(str(wd.parent))
 #* set data paths
 data_in=wd.parents[1]/'data'/'in'
 data_out=wd.parents[1]/'data'/'out'
-'''
-#TODO 
-1. keep only relevant variables []
-2. transform categoricals into dummy variables []
-3. ???
-'''
 
 #*#########################
 #! FUNCTIONS
@@ -76,6 +70,15 @@ ms_data=ms_data.drop(['AGE_REF', 'PERSLT18'], axis=1)
 parker=pd.read_stata(data_in/'Parkeretal_Data.dta')
 parker['newid']=(parker['newid'].astype(str)+parker['intview'].astype(str)).astype(int)
 ms_data=ms_data.merge(parker[['newid', 'liqassii']], on='newid')
+
+#! get some more variables from raw data potentially 
+#read in relevant fmli files and merge into one 
+rbt08=pd.read_csv(data_in/'2008_rawdata'/'expn08'/'rbt08.csv')
+rbt08['custid']=rbt08['NEWID'].apply(lambda x: int(str(x)[:-1]))
+rbt08=rbt08.sort_values('RBTMO')
+rbt08=rbt08.drop_duplicates(subset='custid', keep='first')
+ms_data=ms_data.merge(rbt08[['custid', 'RBTMO']], on='custid', how='left')
+
 
 #* Variable Lists
 #most important observables

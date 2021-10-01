@@ -26,10 +26,6 @@ This file estimates the baseline specifications of the linear DML model to estim
 #*#########################
 #! IDEAS & TO DOs
 #*#########################
-#IDEA: use percentile of rebate size household is in to control for what role the size of the income shock has on MPC
-#TODO: how to control for different channels 
-#TODO: what is X, what is W? 
-#TODO: streamline for final estimation
 #IDEA: control for how many months after announcement rebate was received 
 #*#########################
 #! FUNCTIONS
@@ -106,7 +102,7 @@ def get_cdf(data):
     
     return(pe_sorted, proportions)
 
-def cdf_figure(cdf, l_cdf, u_cdf): 
+def cdf_figure(cdf, l_cdf, u_cdf, spec): 
     '''
     Plot empirical CDF with confidence interval bounds.
     *cdf=cdf of point estimate 
@@ -117,7 +113,8 @@ def cdf_figure(cdf, l_cdf, u_cdf):
     ax.plot(cdf[0], cdf[1])
     ax.plot(l_cdf[0], l_cdf[1])
     ax.plot(u_cdf[0], u_cdf[1])
-    plt.savefig(fig_out/'CDF'/)
+    figname=spec+'_cdf'
+    plt.savefig(fig_out/'CDF'/figname)
     return(fig, ax)
 
 def coef_var_correlation(df, coefs): 

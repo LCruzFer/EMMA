@@ -2,6 +2,7 @@ import sys
 from pathlib import Path 
 import pandas as pd 
 import numpy as np
+from scipy.sparse.base import spmatrix
 from sklearn.cluster import KMeans 
 from sklearn.preprocessing import StandardScaler 
 from sklearn.metrics import silhouette_score
