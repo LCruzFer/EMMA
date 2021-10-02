@@ -1,29 +1,29 @@
 \newpage
 \section{Methodology} \label{sec:methodology}
 
-\subsection{Notes on Methodology for writing}
-\begin{itemize}
-    \item see: \url{https://econml.azurewebsites.net/_autosummary/econml.dml.DML.html#econml.dml.DML}
-    \item how is the CATE achieved in second stage?
-    \begin{itemize}
-        \item second stage in Linear DML is OLS regression 
-        \item CATE is achieved through interaction of some mapping $\phi(X)$ of the confounders $X$ with the 'base' treatment effect $\Theta$.
-        \item effectively running an OLS regression with interaction terms $\tilde{D} \otimes \phi(X)$ 
-        \item hence, assume that CATE is linear in X unless using polynomial mapping $\phi(X)$ 
-        \item nonparametric DML such as Causal Forest DML circumvents this assumption and detects non-linear heterogeneity in case there is any (run this as kind of robustness check/better specification)
-    \end{itemize}
-    \item causal forests/generalized random forests: 
-    \begin{itemize}
-        \item random forests only allow for prediction, no inference possible 
-        \item Athey and Wager (2016) and Athey, Tibshirani and Wager (2019) develop causal forests/grf
-        \item these allow to estimate any desired local moment equation - e.g. those of a treatment effect analysis 
-        \item more specifically, in the DML case the moment equation estimated is 
-        \begin{align*}
-            E\big[\left(Y-E[Y|X, W] - <\theta(X), T-E[T|X, W]> - \beta(x)\right) (T; 1)|X=x\big]=0
-        \end{align*}
-        \item I should push this explanation into the Appendx though and just explain the GRF in more general terms (it detects heterogeneity that is not specified before)
-    \end{itemize}
-\end{itemize}
+% \subsection{Notes on Methodology for writing}
+% \begin{itemize}
+%     \item see: \url{https://econml.azurewebsites.net/_autosummary/econml.dml.DML.html#econml.dml.DML}
+%     \item how is the CATE achieved in second stage?
+%     \begin{itemize}
+%         \item second stage in Linear DML is OLS regression 
+%         \item CATE is achieved through interaction of some mapping $\phi(X)$ of the confounders $X$ with the 'base' treatment effect $\Theta$.
+%         \item effectively running an OLS regression with interaction terms $\tilde{D} \otimes \phi(X)$ 
+%         \item hence, assume that CATE is linear in X unless using polynomial mapping $\phi(X)$ 
+%         \item nonparametric DML such as Causal Forest DML circumvents this assumption and detects non-linear heterogeneity in case there is any (run this as kind of robustness check/better specification)
+%     \end{itemize}
+%     \item causal forests/generalized random forests: 
+%     \begin{itemize}
+%         \item random forests only allow for prediction, no inference possible 
+%         \item Athey and Wager (2016) and Athey, Tibshirani and Wager (2019) develop causal forests/grf
+%         \item these allow to estimate any desired local moment equation - e.g. those of a treatment effect analysis 
+%         \item more specifically, in the DML case the moment equation estimated is 
+%         \begin{align*}
+%             E\big[\left(Y-E[Y|X, W] - <\theta(X), T-E[T|X, W]> - \beta(x)\right) (T; 1)|X=x\big]=0
+%         \end{align*}
+%         \item I should push this explanation into the Appendx though and just explain the GRF in more general terms (it detects heterogeneity that is not specified before)
+%     \end{itemize}
+% \end{itemize}
 To identify the causal effect of the income shock on households' change in consumption, we use the Double Machine Learning (DML) estimator developed by \cite{DML2017}. This rather new kind of estimator allows to efficiently estimate semi- or non-parametric models of treatment effects. The DML estimator has the major advantage that it does not restrict the effect of confounders on the outcome to a specific functional form. Instead it uses Machine Learning methods to freely estimate this relationship. Through the orthogonalization step discussed below it takes care of any confounding effects and cleanly identifies the pure effect of treatment on the outcome. Meanwhile, its implementation procedure deals with common biases arising in more naive estimation procedures that employ Machine Learning methods, opening the door to making use of these spohisticated methods in causal inference studies. Even in settings in which the raw predictions of the ML alogrithms used are not of high quality, the estimator yields desirable results and properties (\textbf{rephrase this last sentence again}).\\
 From a more theoretical perspective the DML estimator also yields very efficient properties when it comes to its asymptotic analysis, especially a rate of convergence that is faster than other nonparametric estimators. Under certain assumption, \cite{DML2017} are able to prove root-n consistency of the estimator. However, we will not further elaborate on these lattertechnical details but rather focus on how the estimator works in general. For a more technical discussion the reader is referred to \cite{DML2017} and \cite{PanelDML}. Instead, this section introduces the general idea behind the DML estimator as well as the different variants we will use in Section \ref{sec:estim_res}. 
 
