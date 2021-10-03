@@ -1,4 +1,4 @@
-\begin{thebibliography}{7}
+\begin{thebibliography}{6}
 \newcommand{\enquote}[1]{``#1''}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
@@ -39,11 +39,5 @@
 \textsc{Parker, J.~A., N.~S. Souleles, D.~S. Johnson, and R.~McClelland}
   (2013): \enquote{Consumer {Spending} and the {Economic} {Stimulus} {Payments}
   of 2008,} \emph{American Economic Review}, 103, 2530--2553.
-
-\bibitem[\protect\citeauthoryear{Semenova, Goldman, Ai, Chernozhukov, Taddy,
-  and Ai}{Semenova et~al.}{2021}]{PanelDML}
-\textsc{Semenova, V., M.~Goldman, M.~Ai, V.~Chernozhukov, M.~Taddy, and M.~Ai}
-  (2021): \enquote{Orthogonal {Machine} {Learning} for {Demand} {Estimation}:
-  {High} {Dimensional} {Causal} {Inference} in {Dynamic} {Panels},} 66.
 
 \end{thebibliography}
