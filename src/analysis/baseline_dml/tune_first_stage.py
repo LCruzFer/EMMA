@@ -71,7 +71,7 @@ constants=['const'+str(i) for i in range(1, 15)]
 #! RF TUNING
 #*#########################
 #set parameters to look at 
-parameters={'max_depth': np.linspace(1, 20, num=10, dtype=int), 'min_samples_leaf': np.linspace(20, 60, num=20, dtype=int), 'max_features': ['auto', 'sqrt', 'log2']}
+parameters={'max_depth': np.linspace(1, 20, num=10, dtype=int), 'min_samples_leaf': np.linspace(20, 60, num=10, dtype=int), 'max_features': ['auto', 'sqrt', 'log2']}
 #set observables for each specification 
 spec1=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']+constants
 spec2=spec1+['married']

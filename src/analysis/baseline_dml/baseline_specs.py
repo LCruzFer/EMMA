@@ -19,6 +19,7 @@ from utils import fitDML
 data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
 fig_out=wd.parents[2]/'figures'
+
 '''
 This file estimates the baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
 '''
@@ -72,24 +73,47 @@ def pdp_plot(x_axis, y_axis, var, model):
     plt.savefig(fig_out/'PDP'/figname)
     return fig, ax
 
-def ice_plot(x_axis, y_axis, var, model):
+def all_pdp_plots(vars, spec, model):
     '''
-    Create Individal Conditional Expecation plot using x- and y-axis values taken from estimation.
-    *x_axis=1-dimensional numpy array, x-axis values
-    *y_axis=2-dimensional numpy array, y-axis values (point estimate and CI bounds)
-    *var=str; variable name for title and axis
-    *model=str; model name, use 'linear', 'causal forest' or 'sparse linear' 
+    Wrapper that plots PDPs for all variables into one large figure. 
+    
+    *vars=list of variables to be included in PDP plot 
+    *spec=fitDML object which has x- and y-axis 
+    *model=str; which model should be plotted, must be 'linear', 'cf' or ''
     '''
-    #! HERE LOTS OF ROOM FOR IMPROVEMENT
-    fig, ax=plt.subplots()
-    for i in range(y_axis.shape[1]):
-        ax.plot(x_axis, y_axis[:, i, 1])
-    ax.set_xlabel(var)
-    ax.set_ylabel('ICE of MPC')
-    ax.set_title(f'Individual Conditional Expectation Plot for {var} using {model} model')
-    figname='ICE_'+var+'_model'
-    plt.savefig(fig_out/'ICE'/'figname')
-    return fig, ax
+    #define dimensions of figure - how many cols, how many rows 
+    #want 4 columns 
+    n_cols=3
+    getrows=lambda x, y: int(len(y)/x) if len(y)%x==0 else int(len(y)/x)+1
+    n_rows=getrows(n_cols, vars)
+    #set up figure
+    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, sharey=True, figsize=(10, 10))
+    #flatten axes array to make looping easy
+    axes=axes.flatten()
+    #delete unnecessary axes 
+    [fig.delaxes(axes[-(i+1)]) for i in range(n_cols*n_rows-len(vars))]
+    #set colors and labels of CI and ATE - same in each axis 
+    colors=['red', 'blue', 'red']    
+    labels=['Lower CI', 'Point Estimate', 'Upper CI']
+    #then plot pdp for each variable
+    for i, var in enumerate(vars): 
+        #get x- and y-axis 
+        x_axis=spec.x_axis[var]
+        y_axes=spec.y_axis[model][var]
+        #plot these on axis[i] (only plot ATE for now)
+        ax=axes[i]
+        [ax.plot(x_axis, y_axis[:, j], color=col, label=lab) for j, col, lab in zip(range(y_axis.shape[1]-2), colors, labels)]
+        #set title etc 
+        ax.set_title(var)
+    #set global legend 
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='center left')
+    #set global title and y-axis title (not yet working with my matplotlib version)
+    fig.suptitle(f'Partial Dependence Plots of {model} model')
+    fig.supylabel('MPC')
+    figname='PDPs_'+'_'+model
+    plt.savefig(fig_out/'PDP'/figname)
+    plt.show()
 
 def get_cdf(data): 
     '''
@@ -155,6 +179,7 @@ print('Hyperparameters ready')
 #* Month constants used in every spec 
 #relative to first month
 constants=['const'+str(i) for i in range(1, 15)]
+
 #! SET TREATMENT AND OUTCOME
 #set for all specifications
 #choose outcome 

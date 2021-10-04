@@ -144,8 +144,8 @@ class fitDML(data_utils):
         self.x_test, self.w_test=super().split_XW(Z=self.z_test, x_columns=self.x_cols)
         #set up empty dicts for ICE and PDP
         self.x_axis={}
-        self.y_axis_pdp={'lin': {}, 'cf': {}, 'sp': {}}
-        self.y_axis_ice={'lin': {}, 'cf': {}, 'sp': {}}
+        self.y_axis_pdp={'linear': {}, 'cf': {}, 'sparse': {}}
+        self.y_axis_ice={'linear': {}, 'cf': {}, 'sparse': {}}
         
     def fit_linear(self, params_Y, params_T, folds): 
         '''
@@ -296,11 +296,17 @@ class fitDML(data_utils):
             ate_inf=estim.const_marginal_ate_inference(X=copy)
             ate_ci=ate_inf.conf_int_mean(alpha=alpha)
             y_axis[i, :]=np.array((ate_ci[0], ate_inf.mean_point, ate_ci[1], ate_inf.stderr_mean, ate_inf.pvalue()))
-        #save as attributes of the class as well
+        #save as attributes of the class
         self.x_axis[var]=x_axis
         self.y_axis_pdp[model][var]=y_axis
-
-        return x_axis, y_axis
+    
+    def all_pdp_axis(self, vars, model='lin', alpha=0.1): 
+        '''
+        Get all pdp axis for vars using specified model.
+        '''
+        #then for each variable apply pdp_function 
+        for var in vars: 
+            self.pdp(var, model=model, alpha=alpha)
     
     def ice(self, var, model='lin'):
         '''
@@ -346,4 +352,9 @@ class fitDML(data_utils):
         self.x_axis[var]=x_axis
         self.y_axis_ice[model][var]=y_axis
 
-        return x_axis, y_axis
+    def all_ice_axis(self, vars, model): 
+        '''
+        Get ICE for all variables in vars.
+        '''
+        for var in vars: 
+            self.ice(var, model=model)
