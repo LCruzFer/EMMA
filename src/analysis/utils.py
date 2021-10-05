@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.preprocessing import PolynomialFeatures
 from econml.dml import LinearDML, CausalForestDML, SparseLinearDML
 from econml.inference import BootstrapInference
+import matplotlib.pyplot as plt 
 
 '''
 This file contains various helper functions for that are done in several files but always involve the same steps - e.g. splitting data into train and test sets or other things.
@@ -142,11 +143,13 @@ class fitDML(data_utils):
         #split z data into X and W
         self.x_train, self.w_train=super().split_XW(Z=self.z_train, x_columns=self.x_cols)
         self.x_test, self.w_test=super().split_XW(Z=self.z_test, x_columns=self.x_cols)
+        #set up empty dict for CDFs
+        self.cdfs={'linear': {}, 'cf': {}, 'sparse': {}}
         #set up empty dicts for ICE and PDP
         self.x_axis={}
         self.y_axis_pdp={'linear': {}, 'cf': {}, 'sparse': {}}
         self.y_axis_ice={'linear': {}, 'cf': {}, 'sparse': {}}
-        
+
     def fit_linear(self, params_Y, params_T, folds): 
         '''
         Estimate a partially linear model using the DML approach. Estimation of E[Y|X] and E[T|X] is done using a random forest. 
@@ -232,16 +235,16 @@ class fitDML(data_utils):
         self.sp_cate_df=self.spDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
     
     def selectmodel(self, model): 
-        if model=='lin': 
+        if model=='linear': 
             return self.linDML
         elif model=='cf':
             return self.cfDML
         elif model=='sp':
             return self.spDML
         else: 
-            raise ValueError('Model must be lin, cf or sp')
+            raise ValueError('Model must be linear, cf or sp')
 
-    def meam(self, var, model='lin'): 
+    def meam(self, var, model='linear'): 
         '''
         Calculate marginal effect at mean (meam) for var. 
         
@@ -262,11 +265,34 @@ class fitDML(data_utils):
         
         return meam_df
     
+    def get_cdfs(self, model):
+        '''
+        Get empirical cdf of point estimate and CI bounds for all estimations of specification.
+        '''
+        #select model
+        if model=='linear':
+            cate_df=self.lin_cate_df
+        elif model=='cf':
+            cate_df=self.cf_cate_df
+        elif model=='sp':
+            cate_df=self.sp_cate_df
+        else: 
+            raise ValueError('Model must be linear, cf or sp')
+        lines=['point_estimate', 'ci_lower', 'ci_upper']
+        for line in lines: 
+            #point estimates sorted by size 
+            pe_sorted=np.sort(np.array(cate_df[line]))
+            #proportional values of sample 
+            proportions=np.arange(len(pe_sorted))/(len(pe_sorted)-1)
+            #and save as attribute of class
+            self.cdfs[model][line]=(pe_sorted, proportions)
+
     def pdp(self, var, model='lin', alpha=0.1): 
         '''
-        Create partial dependence plot and individual conditional expectation y axes for var. 
+        Create partial dependence plot x- and y-axis values and save them in dictionary as attribute of class. 
         *var=str, column name of variable in self.df
         *model=str, choose for which model mean should be calculated
+        *alpha=float, CI bounds will be calculated for alpha and 1-alpha
         '''
         #first select correct model 
         estim=self.selectmodel(model=model)
@@ -300,13 +326,15 @@ class fitDML(data_utils):
         self.x_axis[var]=x_axis
         self.y_axis_pdp[model][var]=y_axis
     
-    def all_pdp_axis(self, vars, model='lin', alpha=0.1): 
+    def all_pdp_axis(self, model='linear', alpha=0.1): 
         '''
         Get all pdp axis for vars using specified model.
         '''
-        #then for each variable apply pdp_function 
-        for var in vars: 
+        #then for each X variable apply pdp_function 
+        variables=self.x_cols
+        for var in variables: 
             self.pdp(var, model=model, alpha=alpha)
+            print(var+' done')
     
     def ice(self, var, model='lin'):
         '''
