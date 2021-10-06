@@ -173,6 +173,9 @@ def all_ice_plots(xaxes, yaxes, model):
     *yaxes=dict of dicts; structure {model: {var: y_axis values}}
     *model=str; which model should be plotted, must be 'linear', 'cf' or ''
     '''
+    xaxes=spec3_est.x_axis_ice
+    yaxes=spec3_est.y_axis_ice 
+    model='linear'
     #first get names of variables from x-axis dictionary
     variables=xaxes.keys()
     #define dimensions of figure - how many cols, how many rows 
@@ -183,6 +186,8 @@ def all_ice_plots(xaxes, yaxes, model):
     n_rows=getrows(n_cols, variables)
     #set up figure
     fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=[30, 10])
+    if n_rows>1:
+        axes=axes.flatten()
     #for each variable plot all lines on one axis
     for i, var in enumerate(variables): 
         #get x-axis 
@@ -307,10 +312,7 @@ spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds
 #fit causal forest model
 folds=5
 spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-#* Estimation: Sparse Linear Regression 
-folds=5
-featurizer=PolynomialFeatures(degree=5, include_bias=False)
-spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds, feat=featurizer)
+
 print('Spec 1 done')
 
 #*#########################
@@ -483,7 +485,7 @@ all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='cf')
 #get all ICE axes for specifications 
 #linear model
 spec3_est.all_ice_axis(model='linear')
-all_ice_plots(spec3_est.x_axis, spec3_est.y_axis_ice, model='linear')
+all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='linear')
 #cf model 
 spec3_est.all_ice_axis(model='cf')
 all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='cf')
