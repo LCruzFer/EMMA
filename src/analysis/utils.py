@@ -146,7 +146,8 @@ class fitDML(data_utils):
         #set up empty dict for CDFs
         self.cdfs={'linear': {}, 'cf': {}, 'sparse': {}}
         #set up empty dicts for ICE and PDP
-        self.x_axis={}
+        self.x_axis_pdp={}
+        self.x_axis_ice={}
         self.y_axis_pdp={'linear': {}, 'cf': {}, 'sparse': {}}
         self.y_axis_ice={'linear': {}, 'cf': {}, 'sparse': {}}
 
@@ -287,7 +288,7 @@ class fitDML(data_utils):
             #and save as attribute of class
             self.cdfs[model][line]=(pe_sorted, proportions)
 
-    def pdp(self, var, model='lin', alpha=0.1): 
+    def pdp(self, var, model='linear', alpha=0.1): 
         '''
         Create partial dependence plot x- and y-axis values and save them in dictionary as attribute of class. 
         *var=str, column name of variable in self.df
@@ -323,7 +324,7 @@ class fitDML(data_utils):
             ate_ci=ate_inf.conf_int_mean(alpha=alpha)
             y_axis[i, :]=np.array((ate_ci[0], ate_inf.mean_point, ate_ci[1], ate_inf.stderr_mean, ate_inf.pvalue()))
         #save as attributes of the class
-        self.x_axis[var]=x_axis
+        self.x_axis_pdp[var]=x_axis
         self.y_axis_pdp[model][var]=y_axis
     
     def all_pdp_axis(self, model='linear', alpha=0.1): 
@@ -336,7 +337,7 @@ class fitDML(data_utils):
             self.pdp(var, model=model, alpha=alpha)
             print(var+' done')
     
-    def ice(self, var, model='lin'):
+    def ice(self, var, model='linear'):
         '''
         Calculate individual conditional expectation values for var. 
         *var=str, column name of variable in self.df
@@ -377,12 +378,13 @@ class fitDML(data_utils):
             #then get ATE, CIs and stderr at this point
             cate_df=estim.const_marginal_effect_inference(X=x_copy).summary_frame()
             y_axis[i, :, :]=np.array((cate_df['ci_lower'], cate_df['point_estimate'], cate_df['ci_upper'], cate_df['stderr'], cate_df['pvalue'])).T
-        self.x_axis[var]=x_axis
+        self.x_axis_ice[var]=x_axis
         self.y_axis_ice[model][var]=y_axis
 
-    def all_ice_axis(self, vars, model): 
+    def all_ice_axis(self, model): 
         '''
         Get ICE for all variables in vars.
         '''
-        for var in vars: 
+        variables=self.x_cols
+        for var in variables: 
             self.ice(var, model=model)

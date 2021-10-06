@@ -115,8 +115,8 @@ def all_pdp_plots(xaxes, yaxes, model):
     '''
     Wrapper that plots PDPs for all variables into one large figure. 
     
-    *vars=list of variables to be included in PDP plot 
-    *spec=fitDML object which has x- and y-axis 
+    *xaxes=dict; structure {var: x_axis values}
+    *yaxes=dict of dicts; structure {model: {var: y_axis values}}
     *model=str; which model should be plotted, must be 'linear', 'cf' or ''
     '''
     #first get names of variables from x-axis dictionary
@@ -128,7 +128,7 @@ def all_pdp_plots(xaxes, yaxes, model):
     getrows=lambda x, y: int(len(y)/x) if len(y)%x==0 else int(len(y)/x)+1
     n_rows=getrows(n_cols, variables)
     #set up figure
-    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, sharey=True, figsize=[30, 10])
+    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=[30, 10])
     #flatten axes array to make looping easy if more than 1 row
     if n_rows>1: 
         axes=axes.flatten()
@@ -147,7 +147,12 @@ def all_pdp_plots(xaxes, yaxes, model):
             ax=axes[i]
         else: 
             ax=axes
-        [ax.plot(x_axis, y_axis[:, j], color=col, label=lab) for j, col, lab in zip(range(y_axis.shape[1]-2), colors, labels)]
+        #if binary variable, then use scatter 
+        if (min(x_axis)==0)&(max(x_axis)==1): 
+            [ax.scatter(x_axis, y_axis[:, j], color=col, label=lab) for j, col, lab in zip(range(y_axis.shape[1]-2), colors, labels)]
+        #else plot 
+        else: 
+            [ax.plot(x_axis, y_axis[:, j], color=col, label=lab) for j, col, lab in zip(range(y_axis.shape[1]-2), colors, labels)]
         #set title etc 
         ax.set_title(var)
     #set global legend 
@@ -158,6 +163,49 @@ def all_pdp_plots(xaxes, yaxes, model):
     fig.supylabel('MPC')
     figname='PDPs_'+model
     plt.savefig(fig_out/'PDP'/figname)
+    plt.show()
+
+def all_ice_plots(xaxes, yaxes, model): 
+    '''
+    Wrapper function to create figure with ICE plots for each variable.
+    
+    *xaxes=dict; structure {var: x_axis values}
+    *yaxes=dict of dicts; structure {model: {var: y_axis values}}
+    *model=str; which model should be plotted, must be 'linear', 'cf' or ''
+    '''
+    #first get names of variables from x-axis dictionary
+    variables=xaxes.keys()
+    #define dimensions of figure - how many cols, how many rows 
+    #want 4 columns 
+    getcols=lambda x: len(x) if len(x)<=3 else 3
+    n_cols=getcols(variables)
+    getrows=lambda x, y: int(len(y)/x) if len(y)%x==0 else int(len(y)/x)+1
+    n_rows=getrows(n_cols, variables)
+    #set up figure
+    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=[30, 10])
+    #for each variable plot all lines on one axis
+    for i, var in enumerate(variables): 
+        #get x-axis 
+        x_axis=xaxes[var]
+        #get y-axis lines 
+        y_axis=yaxes[model][var]
+        #get iˆth axis if n_col>1
+        if n_cols>1: 
+            ax=axes[i]
+        else: 
+            ax=axes
+        #then plot each ICE of this variable on axis (only point estimate!)
+        #if binary, use scatter 
+        if (min(x_axis)==0)&(max(x_axis)==1):
+            [ax.scatter(x_axis, y_axis[:, j, 1]) for j in range(y_axis.shape[1])]
+        else: 
+            [ax.plot(x_axis, y_axis[:, j, 1]) for j in range(y_axis.shape[1])]
+        ax.set_title(var)
+    #set global title and y-axis title (not yet working with my matplotlib version)
+    fig.suptitle(f'Individual Expecations Plot of {model} model')
+    fig.supylabel('MPC')
+    figname='ICEs_'+model
+    plt.savefig(fig_out/'ICE'/figname)
     plt.show()
 
 def cdf_figure(spec, models, figname): 
@@ -256,24 +304,26 @@ print('Spec 1 is set up.')
 folds=5
 spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 #* Estimation: Causal Forest 
-#fit linear model 
+#fit causal forest model
 folds=5
 spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-
+#* Estimation: Sparse Linear Regression 
+folds=5
+featurizer=PolynomialFeatures(degree=5, include_bias=False)
+spec1_est.fit_sparseDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds, feat=featurizer)
 print('Spec 1 done')
 
 #*#########################
 #! Specification 2: Add Marriage 
 #*#########################
 #spec 2 uses only spec 1 variables plus marriage status 
-
 #! FULL SAMPLE
 #* Setup
 #choose x_cols and set wcols
 spec2_xcols=spec1_xcols+['married']
 spec2_wcols=spec1_wcols
 #only keep relevant variables 
-suebset=variables[variables['comp_samp']==1]
+subset=variables[variables['comp_samp']==1]
 spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+spec2_wcols+constants]
 #set up DML class
 spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
@@ -286,7 +336,7 @@ print('Spec 2 is set up.')
 folds=5
 spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 #* Estimation: Causal Forest 
-#fit linear model 
+#fit causal forest model
 folds=5
 spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 
@@ -365,10 +415,18 @@ cdf_figure(spec=spec1_est, models=['linear', 'cf'], figname='cate_cdf_spec1')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec1_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis, spec1_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='linear')
 #cf model 
 spec1_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis, spec1_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='cf')
+#* ICE 
+#get all ICE axes for specifications 
+#linear model
+spec1_est.all_ice_axis(model='linear')
+all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='linear')
+#cf model 
+spec1_est.all_ice_axis(model='cf')
+all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec1_est, 'linear')
@@ -387,10 +445,18 @@ cdf_figure(spec=spec2_est, models=['linear', 'cf'], figname='cate_cdf_spec2')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec2_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis, spec2_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='linear')
 #cf model 
 spec2_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis, spec2_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='cf')
+#* ICE 
+#get all ICE axes for specifications 
+#linear model
+spec2_est.all_ice_axis(model='linear')
+all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='linear')
+#cf model 
+spec2_est.all_ice_axis(model='cf')
+all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec2_est, 'linear')
@@ -409,10 +475,18 @@ cdf_figure(spec=spec3_est, models=['linear', 'cf'], figname='cate_cdf_spec3')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec3_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis, spec3_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='linear')
 #cf model 
 spec3_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis, spec3_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='cf')
+#* ICE 
+#get all ICE axes for specifications 
+#linear model
+spec3_est.all_ice_axis(model='linear')
+all_ice_plots(spec3_est.x_axis, spec3_est.y_axis_ice, model='linear')
+#cf model 
+spec3_est.all_ice_axis(model='cf')
+all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec3_est, 'linear')
@@ -431,10 +505,18 @@ cdf_figure(spec=spec4_est, models=['linear', 'cf'], figname='cate_cdf_spec4')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec4_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis, spec4_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='linear')
 #cf model 
 spec4_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis, spec4_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='cf')
+#* ICE 
+#get all ICE axes for specifications 
+#linear model
+spec4_est.all_ice_axis(model='linear')
+all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='linear')
+#cf model 
+spec4_est.all_ice_axis(model='cf')
+all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec4_est, 'linear')
