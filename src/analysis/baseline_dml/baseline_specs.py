@@ -107,17 +107,18 @@ def pdp_plot(x_axis, y_axis, var, model):
     ax.set_xlabel(var)
     ax.set_ylabel('MPC')
     ax.set_title(f'Partial Dependence Plot for {var} using {model} model')
-    figname='PDP_'+var+'_model'
+    figname='PDP_'+var+'_'+model
     plt.savefig(fig_out/'PDP'/figname)
     return fig, ax
 
-def all_pdp_plots(xaxes, yaxes, model):
+def all_pdp_plots(xaxes, yaxes, model, spec):
     '''
     Wrapper that plots PDPs for all variables into one large figure. 
     
     *xaxes=dict; structure {var: x_axis values}
     *yaxes=dict of dicts; structure {model: {var: y_axis values}}
     *model=str; which model should be plotted, must be 'linear', 'cf' or ''
+    *spec=str; specification used, needed for file name only
     '''
     #first get names of variables from x-axis dictionary
     variables=xaxes.keys()
@@ -161,7 +162,7 @@ def all_pdp_plots(xaxes, yaxes, model):
     #set global title and y-axis title (not yet working with my matplotlib version)
     fig.suptitle(f'Partial Dependence Plots of {model} model')
     fig.supylabel('MPC')
-    figname='PDPs_'+model
+    figname=spec+'PDPs_'+model
     plt.savefig(fig_out/'PDP'/figname)
     plt.show()
 
@@ -257,6 +258,11 @@ def coef_var_correlation(df, coefs):
     
     return corrs
 
+def str_to_tex(file, tex_str):
+    tex_file=open(data_out/'results'/'ate'/file+'.tex')
+    tex_file.write(tex_str)
+    tex_file.close()
+
 #*#########################
 #! DATA
 #*#########################
@@ -292,8 +298,8 @@ treatment='RBTAMT'
 #!only for comparison reasons
 #* Setup
 #choose x and w columns
-spec1_xcols=['AGE']
-spec1_wcols=['AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']
+spec1_xcols=['AGE', 'chFAM_SIZE']
+spec1_wcols=['AGE_sq', 'chFAM_SIZE_sq']
 #! FULL SAMPLE
 #clean data and keep only these variables 
 subset=variables[variables['comp_samp']==1]
@@ -308,11 +314,18 @@ print('Spec 1 is set up.')
 #fit linear model 
 folds=5
 spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#save marginal effect results in CSV 
+spec1_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec1_lin.csv')
+#save ATE results in latex table 
+tex_str=spec1_est.lin_ate_inf.summary().as_latex()
+str_to_tex('spec1_lin_ate', tex_str)   
 #* Estimation: Causal Forest 
 #fit causal forest model
 folds=5
 spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-
+spec1_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec1_cf.csv')
+tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+str_to_tex('spec1_cf_ate', tex_str)
 print('Spec 1 done')
 
 #*#########################
@@ -337,10 +350,16 @@ print('Spec 2 is set up.')
 #fit linear model 
 folds=5
 spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec2_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec2_lin.csv')
+tex_str=spec2_est.lin_ate_inf.summary().as_latex()
+str_to_tex('spec2_lin_ate', tex_str)
 #* Estimation: Causal Forest 
 #fit causal forest model
 folds=5
 spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec2_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec2_cf.csv')
+tex_str=spec2_est.cf_ate_inf.summary().as_latex()
+str_to_tex('spec2_cf_ate', tex_str)
 
 print('Spec 2 done')
 
@@ -351,7 +370,7 @@ print('Spec 2 done')
 #! FULL SAMPLE
 #* Setup
 #choose x_cols 
-spec3_xcols=['AGE', 'liqassii', 'married', 'FINCBTXM', 'FSALARYM']
+spec3_xcols=['AGE', 'chFAM_SIZE','liqassii', 'married', 'FINCBTXM', 'FSALARYM']
 spec3_wcols=spec2_wcols
 #only keep relevant variables 
 subset=variables[variables['l_samp']==1]
@@ -366,10 +385,16 @@ print('Spec 3 is set up.')
 #fit linear model 
 folds=5
 spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec3_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec3_lin.csv')
+tex_str=spec3_est.lin_ate_inf.summary().as_latex()
+str_to_tex('spec3_lin_ate', tex_str)
 #* Estimation: Causal Forest 
 #fit linear model 
 folds=5
 spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec3_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec3_cf.csv')
+tex_str=spec3_est.cf_ate_inf.summary().as_latex()
+str_to_tex('spec3_cf_ate', tex_str)
 
 print('Spec 3 done')
 
@@ -397,10 +422,16 @@ print('Spec 4 is set up.')
 #fit linear model 
 folds=5
 spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec4_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec4_lin.csv')
+tex_str=spec4_est.lin_ate_inf.summary().as_latex()
+str_to_tex('spec4_lin_ate', tex_str)
 #* Estimation: Causal Forest 
 #fit linear model 
 folds=5
 spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+spec4_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec4_cf.csv')
+tex_str=spec4_est.cf_ate_inf.summary().as_latex()
+str_to_tex('spec4_cf_ate', tex_str)
 
 print('Spec 4 done')
 
@@ -417,10 +448,10 @@ cdf_figure(spec=spec1_est, models=['linear', 'cf'], figname='cate_cdf_spec1')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec1_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='linear', spec='spec1')
 #cf model 
 spec1_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='cf', spec='spec1')
 #* ICE 
 #get all ICE axes for specifications 
 #linear model
@@ -447,10 +478,10 @@ cdf_figure(spec=spec2_est, models=['linear', 'cf'], figname='cate_cdf_spec2')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec2_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='linear', spec='spec2')
 #cf model 
 spec2_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='cf', spec='spec2')
 #* ICE 
 #get all ICE axes for specifications 
 #linear model
@@ -477,10 +508,10 @@ cdf_figure(spec=spec3_est, models=['linear', 'cf'], figname='cate_cdf_spec3')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec3_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='linear', spec='spec3')
 #cf model 
 spec3_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='cf', spec='spec3')
 #* ICE 
 #get all ICE axes for specifications 
 #linear model
@@ -507,10 +538,10 @@ cdf_figure(spec=spec4_est, models=['linear', 'cf'], figname='cate_cdf_spec4')
 #get all axes for specification for both models and create PDPs
 #linear model
 spec4_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='linear')
+all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='linear', spec='spec4')
 #cf model 
 spec4_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='cf')
+all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='cf', spec='spec4')
 #* ICE 
 #get all ICE axes for specifications 
 #linear model

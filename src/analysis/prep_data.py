@@ -84,7 +84,7 @@ ms_data=ms_data.merge(rbt08[['custid', 'RBTMO']], on='custid', how='left')
 #most important observables
 observables=['AGE', 'SAVA_CTX', 'MARITAL1', 'CKBK_CTX', 'QESCROWX', 'QMRTTERM', 'ORGMRTX', 'FINCBTXM', 'FSALARYM', 'liqassii', 'adults', 'children', 'FAM_SIZE', 'QBLNCM1X', 'NEWMRRT', 'CUTENURE', 'ST_HOUS']
 #ID and indicator variables 
-meta=['custid', 'newid', 'QINTRVYR', 'QINTRVMO', 'interviewno']
+meta=['custid', 'newid', 'QINTRVYR', 'QINTRVMO', 'interviewno', 'top99pc']
 #treatment variables 
 treatment=['RBTAMT', 'RBTAMT_CHK', 'RBTAMT_EF', 'ontime', 'iREB', 'ontimeRBTAMT', 'ireballt', 'ireballt_CHK', 'iontimereb', 'iontimereb_CHK', 'iontimereb_EF', 'lastrbtamt', 'futrebamt', 'ilreb', 'ifreb']
 #dependent variables (change in expenditure)

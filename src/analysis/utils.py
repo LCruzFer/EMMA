@@ -176,6 +176,8 @@ class fitDML(data_utils):
                     )
         print('Model fitted!')
         self.lin_cate_df=self.linDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
+        #save ATE inference as well 
+        self.lin_ate_inf=self.linDML.const_marginal_ate_inference(X=self.x_test)
     
     def fit_cfDML(self, params_Y, params_T, folds): 
         '''
@@ -204,6 +206,8 @@ class fitDML(data_utils):
                     )
         print('Model fitted!')
         self.cf_cate_df=self.cfDML.const_marginal_effect_inference(X=self.x_test).summary_frame()
+        #save ATE inference as well 
+        self.cf_ate_inf=self.cfDML.const_marginal_ate_inference(X=self.x_test)
 
     def fit_sparseDML(self, params_Y, params_T, folds, feat): 
         '''
