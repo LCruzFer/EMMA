@@ -9,11 +9,17 @@ import itertools
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 
+#!!!!
+#*NEED THE ALE MONTE CARLO STD ERROR IDEA IMPLEMENTED
+#*look ale_plot function to save the MC iters
+#!!!!
+
 #* set system path to import utils
 wd=Path.cwd()
 sys.path.append(str(wd.parent))
 from utils import data_utils
 from utils import fitDML
+import ALEPython.src.alepython as ale_dml
 
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
@@ -263,6 +269,11 @@ def str_to_tex(file, tex_str):
     tex_file.write(tex_str)
     tex_file.close()
 
+# def all_ale_plots(predictor, features, bins, mc=False, mc_n=50): 
+#     '''
+#     Get single-feature ALE plots for all features predictor.
+#     '''
+
 #*#########################
 #! DATA
 #*#########################
@@ -389,7 +400,7 @@ spec3_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec3_lin.csv')
 tex_str=spec3_est.lin_ate_inf.summary().as_latex()
 str_to_tex('spec3_lin_ate', tex_str)
 #* Estimation: Causal Forest 
-#fit linear model 
+#fit cf model 
 folds=5
 spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec3_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec3_cf.csv')
@@ -426,7 +437,7 @@ spec4_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec4_lin.csv')
 tex_str=spec4_est.lin_ate_inf.summary().as_latex()
 str_to_tex('spec4_lin_ate', tex_str)
 #* Estimation: Causal Forest 
-#fit linear model 
+#fit cf model 
 folds=5
 spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec4_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec4_cf.csv')
@@ -558,3 +569,38 @@ testresults_cf=ite_ate_test(spec4_est, 'cf')
 print(sum(testresults_cf[1]))
 
 print('Spec 4 done')
+
+#******************
+#! HERE TESTING THE ALE MC STDERR
+#******************
+mc_rep=100
+bins=10
+_, ale_actual, ale_mc_all, quantiles_actual, quant_mc_all=ale_dml.ale_plot(spec1_est.cfDML, spec1_est.x_test, 'AGE', bins=bins, monte_carlo=True, monte_carlo_rep=mc_rep)
+#! here simply calculate empirical SE
+ses_ale=[]
+for i in range(ale_mc_all[0].shape[0]):
+    vals=[x[i] for x in ale_mc_all]
+    ses_ale.append(np.sqrt(np.var(vals)))
+#*for statistical test follow this 
+#*https://www.biomedware.com/files/documentation/OldCSHelp/MCR/Calculating_Monte_Carlo_p-values.htm 
+#* more on wikipedia here: https://en.wikipedia.org/wiki/Resampling_(statistics)#Monte_Carlo_testing
+#* so these p values only show what the share in difference is from original ALE and the monte carlo created ones 
+#*this doesn't help me as there is no concept of statistical significance when not comparing two sample means to find out whether they have the same distribution 
+#* I don't think this is possible without some assumption on distribution to get critical values, where else should they come from? Better: calculate bootstrapped confidence intervals 
+#settting mc_ratio=1 should lead to bootsstrapping 
+
+def get_pvals(ale, ale_mc, mc_rep):
+    denom=mc_rep+1
+    ale_mc=np.asarray(ale_mc)
+    p_up=[]
+    p_low=[]
+    for i, x in enumerate(ale):
+        p_u=(sum(ale_mc[:, i]>=x)+1)/denom
+        p_l=(sum(ale_mc[:, i]<=x)+1)/denom
+        p_up.append(p_u)
+        p_low.append(p_l)
+    return p_up, p_low
+
+#what is this exactly showing?
+#! i don't think that this is really helping me
+p_up, p_low=get_pvals(ale_actual, ale_mc_all, mc_rep=mc_rep)

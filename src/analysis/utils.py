@@ -188,10 +188,10 @@ class fitDML(data_utils):
         *folds=folds for CV, int or list 
         '''
         #initialize DML model with tuned parameters
-        self.cfDML=CausalForestDML(model_y=RFR(n_estimators=500,
+        self.cfDML=CausalForestDML(model_y=RFR(n_estimators=1000,
                                     max_depth=params_Y['max_depth'],       
                                     min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                        model_t=RFR(n_estimators=500,
+                        model_t=RFR(n_estimators=1000,
                                     max_depth=params_T['max_depth'],    
                                     min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
                         cv=folds,
@@ -392,3 +392,12 @@ class fitDML(data_utils):
         variables=self.x_cols
         for var in variables: 
             self.ice(var, model=model)
+    
+    def ale(self, model): 
+        '''
+        There is already a python package: https://github.com/blent-ai/ALEPython -> also has some resources 
+        main information page: https://christophm.github.io/interpretable-ml-book/ale.html#fn32 
+        
+        
+        '''
+        
