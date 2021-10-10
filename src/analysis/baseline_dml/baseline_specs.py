@@ -9,17 +9,13 @@ import itertools
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 
-#!!!!
-#*NEED THE ALE MONTE CARLO STD ERROR IDEA IMPLEMENTED
-#*look ale_plot function to save the MC iters
-#!!!!
-
 #* set system path to import utils
 wd=Path.cwd()
 sys.path.append(str(wd.parent))
 from utils import data_utils
 from utils import fitDML
-import ALEPython.src.alepython as ale_dml
+from ALEPython.src.alepython import ale_dml
+#import ALEPython.src.alepython as ale_dml
 
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
@@ -88,6 +84,23 @@ def ite_ate_test(spec, model):
     sig=results.abs()>=1.64
     return results, sig
 
+def subplots_canvas(variables): 
+    #want 3 columns 
+    getcols=lambda x: len(x) if len(x)<=3 else 3
+    n_cols=getcols(variables)
+    getrows=lambda x, y: int(len(y)/x) if len(y)%x==0 else int(len(y)/x)+1
+    n_rows=getrows(n_cols, variables)
+    #set up figure
+    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=[30, 10])
+    #flatten axes array to make looping easy if more than 1 row
+    if n_rows>1: 
+        axes=axes.flatten()
+    return fig, axes
+
+def fig_geom(fig): 
+    n_rows, n_cols=fig.axes[0].get_subplotspec().get_topmost_subplotspec().get_gridspec().get_geometry()
+    return n_cols, n_cols
+
 def pdp_plot(x_axis, y_axis, var, model): 
     '''
     Create partial dependence plot using x- and y-axis values taken from estimation. 
@@ -129,16 +142,8 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     #first get names of variables from x-axis dictionary
     variables=xaxes.keys()
     #define dimensions of figure - how many cols, how many rows 
-    #want 4 columns 
-    getcols=lambda x: len(x) if len(x)<=3 else 3
-    n_cols=getcols(variables)
-    getrows=lambda x, y: int(len(y)/x) if len(y)%x==0 else int(len(y)/x)+1
-    n_rows=getrows(n_cols, variables)
-    #set up figure
-    fig, axes=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=[30, 10])
-    #flatten axes array to make looping easy if more than 1 row
-    if n_rows>1: 
-        axes=axes.flatten()
+    fig, axes=subplots_canvas(variables)
+    n_rows, n_cols=fig_geom(fig)
     #delete unnecessary axes 
     [fig.delaxes(axes[-(i+1)]) for i in range(n_cols*n_rows-len(variables))]
     #set colors and labels of CI and ATE - same in each axis 
@@ -171,6 +176,7 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     figname=spec+'PDPs_'+model
     plt.savefig(fig_out/'PDP'/figname)
     plt.show()
+    plt.close()
 
 def all_ice_plots(xaxes, yaxes, model): 
     '''
@@ -180,9 +186,6 @@ def all_ice_plots(xaxes, yaxes, model):
     *yaxes=dict of dicts; structure {model: {var: y_axis values}}
     *model=str; which model should be plotted, must be 'linear', 'cf' or ''
     '''
-    xaxes=spec3_est.x_axis_ice
-    yaxes=spec3_est.y_axis_ice 
-    model='linear'
     #first get names of variables from x-axis dictionary
     variables=xaxes.keys()
     #define dimensions of figure - how many cols, how many rows 
@@ -265,14 +268,54 @@ def coef_var_correlation(df, coefs):
     return corrs
 
 def str_to_tex(file, tex_str):
-    tex_file=open(data_out/'results'/'ate'/file+'.tex')
+    tex_file=open(data_out/'results'/'ate'/file, mode='a')
     tex_file.write(tex_str)
     tex_file.close()
 
-# def all_ale_plots(predictor, features, bins, mc=False, mc_n=50): 
-#     '''
-#     Get single-feature ALE plots for all features predictor.
-#     '''
+def all_ale_plots(spec, model, bins=20, bootstrap=False,
+                bootstrap_samples=1000, n_sample=500, alpha=0.05, cut=1, 
+                figname='ALE'): 
+    '''
+    Get single-feature ALE plots of predictor for all features in training set and save them in one figure.
+    '''
+    train_set=spec.x_test
+    features=train_set.columns
+    predictor=spec.selectmodel(model=model)
+    #set up figure
+    fig, axes=subplots_canvas(features)
+    n_rows, n_cols=fig_geom(fig)
+    #then for each feature
+    for i, feat in enumerate(features): 
+        if feat=='married': 
+            pass
+        else:
+            #get ALE, quantiles and CIs
+            quants, ale, ci_low, ci_up, _=ale_dml.ale_bootstrap(predictor=predictor, train_set=train_set, feature=feat, bins=bins, bootstrap=bootstrap, bootstrap_samples=bootstrap_samples, n_sample=n_sample, alpha=alpha, cut=cut)
+            #then create axes
+            #get iˆth axis if n_col>1
+            if n_cols>1: 
+                ax=axes[i]
+            else: 
+                ax=axes
+            #if bins are actually not existent, then its not possible to create the plot
+            if (quants is None): 
+                pass
+            else:
+                #plot 
+                lines=[ci_low, ale, ci_up]
+                labels=['lower CI', 'ALE', 'upper CI']
+                colors=['red', 'green', 'red']
+                for y, lab, col in zip(lines, labels, colors):
+                    ax.plot(ale_dml._get_centres(quants), y, label=lab, color=col)
+                    ax.set_title(feat)
+    #set global legend, title and y_axis
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
+    fig.suptitle(f'Partial Dependence Plots {model} model')
+    fig.supylabel('ALE of MPC')
+    #save figure
+    plt.savefig(fig_out/'ALE'/figname)
+    plt.show()
 
 #*#########################
 #! DATA
@@ -329,14 +372,16 @@ spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds
 spec1_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec1_lin.csv')
 #save ATE results in latex table 
 tex_str=spec1_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec1_lin_ate', tex_str)   
+str_to_tex('spec1_lin_ate.tex', tex_str)   
 #* Estimation: Causal Forest 
 #fit causal forest model
 folds=5
 spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+#save marginal effect results in CSV 
 spec1_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec1_cf.csv')
+#save ATE results in latex table 
 tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec1_cf_ate', tex_str)
+str_to_tex('spec1_cf_ate.tex', tex_str)
 print('Spec 1 done')
 
 #*#########################
@@ -363,14 +408,14 @@ folds=5
 spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec2_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec2_lin.csv')
 tex_str=spec2_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec2_lin_ate', tex_str)
+str_to_tex('spec2_lin_ate.tex', tex_str)
 #* Estimation: Causal Forest 
 #fit causal forest model
 folds=5
 spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec2_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec2_cf.csv')
 tex_str=spec2_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec2_cf_ate', tex_str)
+str_to_tex('spec2_cf_ate.tex', tex_str)
 
 print('Spec 2 done')
 
@@ -381,7 +426,7 @@ print('Spec 2 done')
 #! FULL SAMPLE
 #* Setup
 #choose x_cols 
-spec3_xcols=['AGE', 'chFAM_SIZE','liqassii', 'married', 'FINCBTXM', 'FSALARYM']
+spec3_xcols=['AGE', 'chFAM_SIZE', 'married', 'liqassii', 'FINCBTXM', 'FSALARYM']
 spec3_wcols=spec2_wcols
 #only keep relevant variables 
 subset=variables[variables['l_samp']==1]
@@ -398,14 +443,14 @@ folds=5
 spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec3_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec3_lin.csv')
 tex_str=spec3_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec3_lin_ate', tex_str)
+str_to_tex('spec3_lin_ate.tex', tex_str)
 #* Estimation: Causal Forest 
 #fit cf model 
 folds=5
 spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec3_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec3_cf.csv')
 tex_str=spec3_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec3_cf_ate', tex_str)
+str_to_tex('spec3_cf_ate.tex', tex_str)
 
 print('Spec 3 done')
 
@@ -435,14 +480,14 @@ folds=5
 spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec4_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec4_lin.csv')
 tex_str=spec4_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec4_lin_ate', tex_str)
+str_to_tex('spec4_lin_ate.tex', tex_str)
 #* Estimation: Causal Forest 
 #fit cf model 
 folds=5
 spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
 spec4_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec4_cf.csv')
 tex_str=spec4_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec4_cf_ate', tex_str)
+str_to_tex('spec4_cf_ate.tex', tex_str)
 
 print('Spec 4 done')
 
@@ -471,6 +516,11 @@ all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='linear')
 #cf model 
 spec1_est.all_ice_axis(model='cf')
 all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='cf')
+#* ALE 
+#linear
+all_ale_plots(spec1_est, model='linear', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_linear')
+#cf
+all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec1_est, 'linear')
@@ -501,6 +551,11 @@ all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='linear')
 #cf model 
 spec2_est.all_ice_axis(model='cf')
 all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='cf')
+#* ALE 
+#linear
+all_ale_plots(spec2_est, model='linear', bins=20, bootstrap=True, n_sample=spec2_est.x_test.shape[0], figname='spec2_linear')
+#cf
+all_ale_plots(spec2_est, model='cf', bins=20, bootstrap=True, n_sample=spec2_est.x_test.shape[0], figname='spec2_cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec2_est, 'linear')
@@ -531,6 +586,11 @@ all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='linear')
 #cf model 
 spec3_est.all_ice_axis(model='cf')
 all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='cf')
+#* ALE 
+#linear
+all_ale_plots(spec3_est, model='linear', bins=20, bootstrap=True, n_sample=spec3_est.x_test.shape[0], figname='spec3_linear')
+#cf
+all_ale_plots(spec3_est, model='cf', bins=20, bootstrap=True, n_sample=spec3_est.x_test.shape[0], figname='spec3_cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec3_est, 'linear')
@@ -561,6 +621,11 @@ all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='linear')
 #cf model 
 spec4_est.all_ice_axis(model='cf')
 all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='cf')
+# #* ALE 
+# #linear
+# all_ale_plots(spec1_est, model='linear', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_linear')
+# #cf
+# all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_cf')
 
 #* Test ITE-ATE
 testresults_lin=ite_ate_test(spec4_est, 'linear')
@@ -570,37 +635,3 @@ print(sum(testresults_cf[1]))
 
 print('Spec 4 done')
 
-#******************
-#! HERE TESTING THE ALE MC STDERR
-#******************
-mc_rep=100
-bins=10
-_, ale_actual, ale_mc_all, quantiles_actual, quant_mc_all=ale_dml.ale_plot(spec1_est.cfDML, spec1_est.x_test, 'AGE', bins=bins, monte_carlo=True, monte_carlo_rep=mc_rep)
-#! here simply calculate empirical SE
-ses_ale=[]
-for i in range(ale_mc_all[0].shape[0]):
-    vals=[x[i] for x in ale_mc_all]
-    ses_ale.append(np.sqrt(np.var(vals)))
-#*for statistical test follow this 
-#*https://www.biomedware.com/files/documentation/OldCSHelp/MCR/Calculating_Monte_Carlo_p-values.htm 
-#* more on wikipedia here: https://en.wikipedia.org/wiki/Resampling_(statistics)#Monte_Carlo_testing
-#* so these p values only show what the share in difference is from original ALE and the monte carlo created ones 
-#*this doesn't help me as there is no concept of statistical significance when not comparing two sample means to find out whether they have the same distribution 
-#* I don't think this is possible without some assumption on distribution to get critical values, where else should they come from? Better: calculate bootstrapped confidence intervals 
-#settting mc_ratio=1 should lead to bootsstrapping 
-
-def get_pvals(ale, ale_mc, mc_rep):
-    denom=mc_rep+1
-    ale_mc=np.asarray(ale_mc)
-    p_up=[]
-    p_low=[]
-    for i, x in enumerate(ale):
-        p_u=(sum(ale_mc[:, i]>=x)+1)/denom
-        p_l=(sum(ale_mc[:, i]<=x)+1)/denom
-        p_up.append(p_u)
-        p_low.append(p_l)
-    return p_up, p_low
-
-#what is this exactly showing?
-#! i don't think that this is really helping me
-p_up, p_low=get_pvals(ale_actual, ale_mc_all, mc_rep=mc_rep)
