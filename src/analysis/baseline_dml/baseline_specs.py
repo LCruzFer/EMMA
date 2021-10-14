@@ -21,6 +21,7 @@ from ALEPython.src.alepython import ale_dml
 data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
 fig_out=wd.parents[2]/'figures'
+results=wd.parents[2]/'data'/'results'
 
 '''
 This file estimates the baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
@@ -170,7 +171,7 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     fig.suptitle(f'Partial Dependence Plots of {model} model')
     fig.supylabel('MPC')
     figname=spec+'PDPs_'+model
-    plt.savefig(fig_out/'PDP'/figname)
+    plt.savefig(fig_out/'PDP'/outcome/figname)
 
 def all_ice_plots(xaxes, yaxes, model): 
     '''
@@ -215,7 +216,7 @@ def all_ice_plots(xaxes, yaxes, model):
     fig.suptitle(f'Individual Expecations Plot of {model} model')
     fig.supylabel('MPC')
     figname='ICEs_'+model
-    plt.savefig(fig_out/'ICE'/figname)
+    plt.savefig(fig_out/'ICE'/outcome/figname)
 
 def cdf_figure(spec, models, figname): 
     '''
@@ -243,7 +244,7 @@ def cdf_figure(spec, models, figname):
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
     #save figure
-    plt.savefig(fig_out/'CDF'/figname)
+    plt.savefig(fig_out/'CDF'/outcome/figname)
     return(fig, ax)
 
 def coef_var_correlation(df, coefs): 
@@ -262,7 +263,7 @@ def coef_var_correlation(df, coefs):
     return corrs
 
 def str_to_tex(file, tex_str):
-    tex_file=open(data_out/'results'/'ate'/file, mode='a')
+    tex_file=open(results/'ate'/outcome/file, mode='a')
     tex_file.write(tex_str)
     tex_file.close()
 
@@ -310,7 +311,7 @@ def all_ale_plots(spec, model, bins=20, bootstrap=False,
     fig.suptitle(f'Partial Dependence Plots {model} model')
     fig.supylabel('ALE of MPC')
     #save figure
-    plt.savefig(fig_out/'ALE'/figname)
+    plt.savefig(fig_out/'ALE'/outcome/figname)
     plt.close()
 
 def do_analysis(spec, specname): 
@@ -342,7 +343,7 @@ def do_analysis(spec, specname):
     #linear
     all_ale_plots(spec, model='linear', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_linear')
     #cf
-    all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec1_est.x_test.shape[0], figname=specname+'_cf')
+    all_ale_plots(spec, model='cf', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_cf')
     print('ALE done')
 
 #*#########################
@@ -365,205 +366,211 @@ print('Hyperparameters loaded')
 #* Month constants used in every spec 
 #relative to first month
 constants=['const'+str(i) for i in range(1, 15)]
+#list of outcome variables
+outcomes=['chTOTexp', 'chNDexp', 'chSNDexp','chFDexp','chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
+#loop over all outcomes 
+#! stopped at chNDexp spec4 (this is still missing)
+for out in outcomes:
+    print(f'{out} start!')
+    #! SET TREATMENT AND OUTCOME
+    #set for all specifications
+    #choose treatment
+    treatment='RBTAMT'
+    #choose outcome 
+    outcome=out
 
-#! SET TREATMENT AND OUTCOME
-#set for all specifications
-#choose outcome 
-outcome='chUTILexp'
-#choose treatment
-treatment='RBTAMT'
+    #*#########################
+    #! Specification 1: using MS specification
+    #*#########################
+    #specification 1 uses all available observations and hence only variables that have no missings 
+    #!only for comparison reasons
+    #* Setup
+    #choose x and w columns
+    spec1_xcols=['AGE', 'chFAM_SIZE']
+    spec1_wcols=['AGE_sq', 'chFAM_SIZE_sq']
+    #! FULL SAMPLE
+    #clean data and keep only these variables 
+    subset=variables[variables['comp_samp']==1]
+    spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
+    #set up DML class
+    spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
+    #get opt parameters for first stage for setting
+    best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec1')
+    print('Spec 1 is set up.')
 
-#*#########################
-#! Specification 1: using MS specification
-#*#########################
-#specification 1 uses all available observations and hence only variables that have no missings 
-#!only for comparison reasons
-#* Setup
-#choose x and w columns
-spec1_xcols=['AGE', 'chFAM_SIZE']
-spec1_wcols=['AGE_sq', 'chFAM_SIZE_sq']
-#! FULL SAMPLE
-#clean data and keep only these variables 
-subset=variables[variables['comp_samp']==1]
-spec1_df=subset[['custid']+[outcome, treatment]+spec1_xcols+spec1_wcols+constants]
-#set up DML class
-spec1_est=fitDML(spec1_df, treatment, outcome, spec1_xcols)
-#get opt parameters for first stage for setting
-best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec1')
-print('Spec 1 is set up.')
+    #* Estimation: Linear
+    #fit linear model 
+    folds=5
+    spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    #save marginal effect results in CSV 
+    spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
+    #save ATE results in latex table 
+    tex_str=spec1_est.lin_ate_inf.summary().as_latex()
+    str_to_tex('spec1_lin_ate.tex', tex_str)   
+    #* Estimation: Causal Forest 
+    #fit causal forest model
+    folds=5
+    spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    #save marginal effect results in CSV 
+    spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
+    #save ATE results in latex table 
+    tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec1_cf_ate.tex', tex_str)
+    print('Spec 1 done')
 
-#* Estimation: Linear
-#fit linear model 
-folds=5
-spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-#save marginal effect results in CSV 
-spec1_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec1_lin.csv')
-#save ATE results in latex table 
-tex_str=spec1_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec1_lin_ate.tex', tex_str)   
-#* Estimation: Causal Forest 
-#fit causal forest model
-folds=5
-spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-#save marginal effect results in CSV 
-spec1_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec1_cf.csv')
-#save ATE results in latex table 
-tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec1_cf_ate.tex', tex_str)
-print('Spec 1 done')
+    #*#########################
+    #! Specification 2: Add Marriage 
+    #*#########################
+    #spec 2 uses only spec 1 variables plus marriage status 
+    #! FULL SAMPLE
+    #* Setup
+    #choose x_cols and set wcols
+    spec2_xcols=spec1_xcols+['married']
+    spec2_wcols=spec1_wcols
+    #only keep relevant variables 
+    subset=variables[variables['comp_samp']==1]
+    spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+spec2_wcols+constants]
+    #set up DML class
+    spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
+    #get opt parameters for first stage for setting
+    best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec2')
+    print('Spec 2 is set up.')
 
-#*#########################
-#! Specification 2: Add Marriage 
-#*#########################
-#spec 2 uses only spec 1 variables plus marriage status 
-#! FULL SAMPLE
-#* Setup
-#choose x_cols and set wcols
-spec2_xcols=spec1_xcols+['married']
-spec2_wcols=spec1_wcols
-#only keep relevant variables 
-subset=variables[variables['comp_samp']==1]
-spec2_df=subset[['custid']+[treatment, outcome]+spec2_xcols+spec2_wcols+constants]
-#set up DML class
-spec2_est=fitDML(spec2_df, treatment, outcome, spec2_xcols)
-#get opt parameters for first stage for setting
-best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec2')
-print('Spec 2 is set up.')
+    #* Estimation: Linear
+    #fit linear model 
+    folds=5
+    spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec2_est.lin_cate_df.to_csv(results/outcome/'cate_spec2_lin.csv')
+    tex_str=spec2_est.lin_ate_inf.summary().as_latex()
+    str_to_tex('spec2_lin_ate.tex', tex_str)
+    #* Estimation: Causal Forest 
+    #fit causal forest model
+    folds=5
+    spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
+    tex_str=spec2_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec2_cf_ate.tex', tex_str)
 
-#* Estimation: Linear
-#fit linear model 
-folds=5
-spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec2_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec2_lin.csv')
-tex_str=spec2_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec2_lin_ate.tex', tex_str)
-#* Estimation: Causal Forest 
-#fit causal forest model
-folds=5
-spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec2_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec2_cf.csv')
-tex_str=spec2_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec2_cf_ate.tex', tex_str)
+    print('Spec 2 done')
 
-print('Spec 2 done')
+    #*#########################
+    #! Specification 3: Liquidity and salary
+    #*#########################
+    #add liqudity and salary variables
+    #! FULL SAMPLE
+    #* Setup
+    #choose x_cols 
+    spec3_xcols=['AGE', 'chFAM_SIZE', 'married', 'liqassii', 'FINCBTXM', 'FSALARYM']
+    spec3_wcols=spec2_wcols
+    #only keep relevant variables 
+    subset=variables[variables['l_samp']==1]
+    spec3_df=subset[['custid']+[treatment, outcome]+spec3_xcols+spec3_wcols+constants]
+    #set up DML class
+    spec3_est=fitDML(spec3_df, treatment, outcome, spec3_xcols)
+    #get opt parameters for first stage for setting
+    best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec3')
+    print('Spec 3 is set up.')
 
-#*#########################
-#! Specification 3: Liquidity and salary
-#*#########################
-#add liqudity and salary variables
-#! FULL SAMPLE
-#* Setup
-#choose x_cols 
-spec3_xcols=['AGE', 'chFAM_SIZE', 'married', 'liqassii', 'FINCBTXM', 'FSALARYM']
-spec3_wcols=spec2_wcols
-#only keep relevant variables 
-subset=variables[variables['l_samp']==1]
-spec3_df=subset[['custid']+[treatment, outcome]+spec3_xcols+spec3_wcols+constants]
-#set up DML class
-spec3_est=fitDML(spec3_df, treatment, outcome, spec3_xcols)
-#get opt parameters for first stage for setting
-best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec3')
-print('Spec 3 is set up.')
+    #* Estimation: Linear
+    #fit linear model 
+    folds=5
+    spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
+    tex_str=spec3_est.lin_ate_inf.summary().as_latex()
+    str_to_tex('spec3_lin_ate.tex', tex_str)
+    #* Estimation: Causal Forest 
+    #fit cf model 
+    folds=5
+    spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
+    tex_str=spec3_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec3_cf_ate.tex', tex_str)
 
-#* Estimation: Linear
-#fit linear model 
-folds=5
-spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec3_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec3_lin.csv')
-tex_str=spec3_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec3_lin_ate.tex', tex_str)
-#* Estimation: Causal Forest 
-#fit cf model 
-folds=5
-spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec3_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec3_cf.csv')
-tex_str=spec3_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec3_cf_ate.tex', tex_str)
+    print('Spec 3 done')
 
-print('Spec 3 done')
+    #*#########################
+    #! Specification 4: All financial variables
+    #*#########################
+    #spec 4 uses all financial variables (smallest sample available)
 
-#*#########################
-#! Specification 4: All financial variables
-#*#########################
-#spec 4 uses all financial variables (smallest sample available)
+    #! FULL SAMPLE
+    #* Setup
+    #choose x_cols 
+    spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
+    spec4_wcols=spec3_wcols
+    #only keep relevant variables 
+    subset=variables[variables['comp_samp']==1]
+    spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+spec4_wcols+constants]
+    spec4_df=spec4_df.dropna()
+    #set up DML class
+    spec4_est=fitDML(spec4_df, treatment, outcome, spec4_xcols)
+    #get opt parameters for first stage for setting
+    best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec4')
+    print('Spec 4 is set up.')
 
-#! FULL SAMPLE
-#* Setup
-#choose x_cols 
-spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
-spec4_wcols=spec3_wcols
-#only keep relevant variables 
-subset=variables[variables['comp_samp']==1]
-spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+spec4_wcols+constants]
-spec4_df=spec4_df.dropna()
-#set up DML class
-spec4_est=fitDML(spec4_df, treatment, outcome, spec4_xcols)
-#get opt parameters for first stage for setting
-best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec4')
-print('Spec 4 is set up.')
+    #* Estimation: Linear
+    #fit linear model 
+    folds=5
+    spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
+    tex_str=spec4_est.lin_ate_inf.summary().as_latex()
+    str_to_tex('spec4_lin_ate.tex', tex_str)
+    #* Estimation: Causal Forest 
+    #fit cf model 
+    folds=5
+    spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
+    tex_str=spec4_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec4_cf_ate.tex', tex_str)
 
-#* Estimation: Linear
-#fit linear model 
-folds=5
-spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec4_est.lin_cate_df.to_csv(data_out/'results'/'cate_spec4_lin.csv')
-tex_str=spec4_est.lin_ate_inf.summary().as_latex()
-str_to_tex('spec4_lin_ate.tex', tex_str)
-#* Estimation: Causal Forest 
-#fit cf model 
-folds=5
-spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-spec4_est.cf_cate_df.to_csv(data_out/'results'/'cate_spec4_cf.csv')
-tex_str=spec4_est.cf_ate_inf.summary().as_latex()
-str_to_tex('spec4_cf_ate.tex', tex_str)
+    print('Spec 4 done')
 
-print('Spec 4 done')
+    #*#########################
+    #! ANALYSIS
+    #*#########################
 
-#*#########################
-#! ANALYSIS
-#*#########################
+    #*#########
+    #! Spec 1 
+    print('Start Spec 1')
+    do_analysis(spec1_est, 'spec1')
+    # #* Test ITE-ATE
+    #! use randomization tests for this!!!! (see http://datacolada.org/99)
+    # testresults_lin=ite_ate_test(spec1_est, 'linear')
+    # print(sum(testresults_lin[1]))
+    # testresults_cf=ite_ate_test(spec1_est, 'cf')
+    # print(sum(testresults_cf[1]))
+    print('Spec 1 done')
 
-#*#########
-#! Spec 1 
-print('Start Spec 1')
-do_analysis(spec1_est, 'spec1')
-# #* Test ITE-ATE
-#! use randomization tests for this!!!! (see http://datacolada.org/99)
-# testresults_lin=ite_ate_test(spec1_est, 'linear')
-# print(sum(testresults_lin[1]))
-# testresults_cf=ite_ate_test(spec1_est, 'cf')
-# print(sum(testresults_cf[1]))
-print('Spec 1 done')
+    #*#########
+    #! Spec 2 
+    print('Start Spec 2')
+    do_analysis(spec2_est, 'spec2')
+    # #* Test ITE-ATE
+    # testresults_lin=ite_ate_test(spec2_est, 'linear')
+    # print(sum(testresults_lin[1]))
+    # testresults_cf=ite_ate_test(spec2_est, 'cf')
+    # print(sum(testresults_cf[1]))
+    print('Spec 2 done')
 
-#*#########
-#! Spec 2 
-print('Start Spec 2')
-do_analysis(spec2_est, 'spec2')
-# #* Test ITE-ATE
-# testresults_lin=ite_ate_test(spec2_est, 'linear')
-# print(sum(testresults_lin[1]))
-# testresults_cf=ite_ate_test(spec2_est, 'cf')
-# print(sum(testresults_cf[1]))
-print('Spec 2 done')
+    #*#########
+    #! Spec 3 
+    print('Start Spec 3')
+    do_analysis(spec3_est, 'spec3')
+    # #* Test ITE-ATE
+    # testresults_lin=ite_ate_test(spec3_est, 'linear')
+    # print(sum(testresults_lin[1]))
+    # testresults_cf=ite_ate_test(spec3_est, 'cf')
+    # print(sum(testresults_cf[1]))
+    print('Spec 3 done')
 
-#*#########
-#! Spec 3 
-print('Start Spec 3')
-do_analysis(spec3_est, 'spec3')
-# #* Test ITE-ATE
-# testresults_lin=ite_ate_test(spec3_est, 'linear')
-# print(sum(testresults_lin[1]))
-# testresults_cf=ite_ate_test(spec3_est, 'cf')
-# print(sum(testresults_cf[1]))
-print('Spec 3 done')
-
-#*#########
-#! Spec 4 
-print('Start Spec 4')
-do_analysis(spec4_est, 'spec4')
-# #* Test ITE-ATE
-# testresults_lin=ite_ate_test(spec4_est, 'linear')
-# print(sum(testresults_lin[1]))
-# testresults_cf=ite_ate_test(spec4_est, 'cf')
-# print(sum(testresults_cf[1]))
-print('Spec 4 done')
+    #*#########
+    #! Spec 4 
+    print('Start Spec 4')
+    do_analysis(spec4_est, 'spec4')
+    # #* Test ITE-ATE
+    # testresults_lin=ite_ate_test(spec4_est, 'linear')
+    # print(sum(testresults_lin[1]))
+    # testresults_cf=ite_ate_test(spec4_est, 'cf')
+    # print(sum(testresults_cf[1]))
+    print('Spec 4 done')
+    print(f'{out} end!')
