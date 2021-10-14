@@ -27,11 +27,6 @@ This file estimates the baseline specifications of the linear DML model to estim
 '''
 
 #*#########################
-#! IDEAS & TO DOs
-#*#########################
-#IDEA: control for how many months after announcement rebate was received 
-
-#*#########################
 #! FUNCTIONS
 #*#########################
 def retrieve_params(params_df, treatment, outcome, spec): 
@@ -99,7 +94,7 @@ def subplots_canvas(variables):
 
 def fig_geom(fig): 
     n_rows, n_cols=fig.axes[0].get_subplotspec().get_topmost_subplotspec().get_gridspec().get_geometry()
-    return n_cols, n_cols
+    return n_rows, n_cols
 
 def pdp_plot(x_axis, y_axis, var, model): 
     '''
@@ -151,6 +146,7 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     labels=['Lower CI', 'Point Estimate', 'Upper CI']
     #then plot pdp for each variable
     for i, var in enumerate(variables): 
+        print(var)
         #get x- and y-axis 
         x_axis=xaxes[var]
         y_axis=yaxes[model][var]
@@ -175,8 +171,6 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     fig.supylabel('MPC')
     figname=spec+'PDPs_'+model
     plt.savefig(fig_out/'PDP'/figname)
-    plt.show()
-    plt.close()
 
 def all_ice_plots(xaxes, yaxes, model): 
     '''
@@ -200,6 +194,7 @@ def all_ice_plots(xaxes, yaxes, model):
         axes=axes.flatten()
     #for each variable plot all lines on one axis
     for i, var in enumerate(variables): 
+        print(var)
         #get x-axis 
         x_axis=xaxes[var]
         #get y-axis lines 
@@ -221,7 +216,6 @@ def all_ice_plots(xaxes, yaxes, model):
     fig.supylabel('MPC')
     figname='ICEs_'+model
     plt.savefig(fig_out/'ICE'/figname)
-    plt.show()
 
 def cdf_figure(spec, models, figname): 
     '''
@@ -286,7 +280,9 @@ def all_ale_plots(spec, model, bins=20, bootstrap=False,
     n_rows, n_cols=fig_geom(fig)
     #then for each feature
     for i, feat in enumerate(features): 
-        if feat=='married': 
+        print(feat)
+    #!this is ugly so far
+        if feat in ['married', 'owned_m', 'notowned']: 
             pass
         else:
             #get ALE, quantiles and CIs
@@ -315,7 +311,39 @@ def all_ale_plots(spec, model, bins=20, bootstrap=False,
     fig.supylabel('ALE of MPC')
     #save figure
     plt.savefig(fig_out/'ALE'/figname)
-    plt.show()
+    plt.close()
+
+def do_analysis(spec, specname): 
+    '''
+    Apply all analysis steps to spec. 
+    '''
+    #* CDF 
+    cdf_name='cate_df_'+specname
+    cdf_figure(spec=spec, models=['linear', 'cf'], figname=cdf_name)
+    print('CDF done')
+    #* PDP 
+    # #get all axes for specification for both models and create PDPs
+    # #linear model
+    # spec.all_pdp_axis(model='linear', alpha=0.1)
+    # all_pdp_plots(spec.x_axis_pdp, spec.y_axis_pdp, model='linear', spec=specname)
+    # #cf model 
+    # spec.all_pdp_axis(model='cf', alpha=0.1)
+    # all_pdp_plots(spec.x_axis_pdp, spec.y_axis_pdp, model='cf', spec=specname)
+    # print('PDP done')
+    # # #* ICE 
+    # #get all ICE axes for specifications 
+    # #linear model
+    # spec.all_ice_axis(model='linear')
+    # all_ice_plots(spec.x_axis_ice, spec.y_axis_ice, model='linear')
+    # #cf model 
+    # spec.all_ice_axis(model='cf')
+    # all_ice_plots(spec.x_axis_ice, spec.y_axis_ice, model='cf')
+    #* ALE 
+    #linear
+    all_ale_plots(spec, model='linear', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_linear')
+    #cf
+    all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec1_est.x_test.shape[0], figname=specname+'_cf')
+    print('ALE done')
 
 #*#########################
 #! DATA
@@ -341,7 +369,7 @@ constants=['const'+str(i) for i in range(1, 15)]
 #! SET TREATMENT AND OUTCOME
 #set for all specifications
 #choose outcome 
-outcome='chTOTexp'
+outcome='chUTILexp'
 #choose treatment
 treatment='RBTAMT'
 
@@ -469,7 +497,7 @@ subset=variables[variables['comp_samp']==1]
 spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+spec4_wcols+constants]
 spec4_df=spec4_df.dropna()
 #set up DML class
-spec4_est=fitDML(spec4_df, treatment, outcome, spec3_xcols)
+spec4_est=fitDML(spec4_df, treatment, outcome, spec4_xcols)
 #get opt parameters for first stage for setting
 best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec4')
 print('Spec 4 is set up.')
@@ -498,140 +526,44 @@ print('Spec 4 done')
 #*#########
 #! Spec 1 
 print('Start Spec 1')
-#* CDF 
-cdf_figure(spec=spec1_est, models=['linear', 'cf'], figname='cate_cdf_spec1')
-#* PDP 
-#get all axes for specification for both models and create PDPs
-#linear model
-spec1_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='linear', spec='spec1')
-#cf model 
-spec1_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec1_est.x_axis_pdp, spec1_est.y_axis_pdp, model='cf', spec='spec1')
-#* ICE 
-#get all ICE axes for specifications 
-#linear model
-spec1_est.all_ice_axis(model='linear')
-all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='linear')
-#cf model 
-spec1_est.all_ice_axis(model='cf')
-all_ice_plots(spec1_est.x_axis_ice, spec1_est.y_axis_ice, model='cf')
-#* ALE 
-#linear
-all_ale_plots(spec1_est, model='linear', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_linear')
-#cf
-all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_cf')
-
-#* Test ITE-ATE
-testresults_lin=ite_ate_test(spec1_est, 'linear')
-print(sum(testresults_lin[1]))
-testresults_cf=ite_ate_test(spec1_est, 'cf')
-print(sum(testresults_cf[1]))
-
+do_analysis(spec1_est, 'spec1')
+# #* Test ITE-ATE
+#! use randomization tests for this!!!! (see http://datacolada.org/99)
+# testresults_lin=ite_ate_test(spec1_est, 'linear')
+# print(sum(testresults_lin[1]))
+# testresults_cf=ite_ate_test(spec1_est, 'cf')
+# print(sum(testresults_cf[1]))
 print('Spec 1 done')
 
 #*#########
 #! Spec 2 
 print('Start Spec 2')
-#* CDF 
-cdf_figure(spec=spec2_est, models=['linear', 'cf'], figname='cate_cdf_spec2')
-#* PDP 
-#get all axes for specification for both models and create PDPs
-#linear model
-spec2_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='linear', spec='spec2')
-#cf model 
-spec2_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec2_est.x_axis_pdp, spec2_est.y_axis_pdp, model='cf', spec='spec2')
-#* ICE 
-#get all ICE axes for specifications 
-#linear model
-spec2_est.all_ice_axis(model='linear')
-all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='linear')
-#cf model 
-spec2_est.all_ice_axis(model='cf')
-all_ice_plots(spec2_est.x_axis_ice, spec2_est.y_axis_ice, model='cf')
-#* ALE 
-#linear
-all_ale_plots(spec2_est, model='linear', bins=20, bootstrap=True, n_sample=spec2_est.x_test.shape[0], figname='spec2_linear')
-#cf
-all_ale_plots(spec2_est, model='cf', bins=20, bootstrap=True, n_sample=spec2_est.x_test.shape[0], figname='spec2_cf')
-
-#* Test ITE-ATE
-testresults_lin=ite_ate_test(spec2_est, 'linear')
-print(sum(testresults_lin[1]))
-testresults_cf=ite_ate_test(spec2_est, 'cf')
-print(sum(testresults_cf[1]))
-
+do_analysis(spec2_est, 'spec2')
+# #* Test ITE-ATE
+# testresults_lin=ite_ate_test(spec2_est, 'linear')
+# print(sum(testresults_lin[1]))
+# testresults_cf=ite_ate_test(spec2_est, 'cf')
+# print(sum(testresults_cf[1]))
 print('Spec 2 done')
 
 #*#########
 #! Spec 3 
 print('Start Spec 3')
-#* CDF 
-cdf_figure(spec=spec3_est, models=['linear', 'cf'], figname='cate_cdf_spec3')
-#* PDP 
-#get all axes for specification for both models and create PDPs
-#linear model
-spec3_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='linear', spec='spec3')
-#cf model 
-spec3_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec3_est.x_axis_pdp, spec3_est.y_axis_pdp, model='cf', spec='spec3')
-#* ICE 
-#get all ICE axes for specifications 
-#linear model
-spec3_est.all_ice_axis(model='linear')
-all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='linear')
-#cf model 
-spec3_est.all_ice_axis(model='cf')
-all_ice_plots(spec3_est.x_axis_ice, spec3_est.y_axis_ice, model='cf')
-#* ALE 
-#linear
-all_ale_plots(spec3_est, model='linear', bins=20, bootstrap=True, n_sample=spec3_est.x_test.shape[0], figname='spec3_linear')
-#cf
-all_ale_plots(spec3_est, model='cf', bins=20, bootstrap=True, n_sample=spec3_est.x_test.shape[0], figname='spec3_cf')
-
-#* Test ITE-ATE
-testresults_lin=ite_ate_test(spec3_est, 'linear')
-print(sum(testresults_lin[1]))
-testresults_cf=ite_ate_test(spec3_est, 'cf')
-print(sum(testresults_cf[1]))
-
+do_analysis(spec3_est, 'spec3')
+# #* Test ITE-ATE
+# testresults_lin=ite_ate_test(spec3_est, 'linear')
+# print(sum(testresults_lin[1]))
+# testresults_cf=ite_ate_test(spec3_est, 'cf')
+# print(sum(testresults_cf[1]))
 print('Spec 3 done')
 
 #*#########
 #! Spec 4 
 print('Start Spec 4')
-#* CDF 
-cdf_figure(spec=spec4_est, models=['linear', 'cf'], figname='cate_cdf_spec4')
-#* PDP 
-#get all axes for specification for both models and create PDPs
-#linear model
-spec4_est.all_pdp_axis(model='linear', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='linear', spec='spec4')
-#cf model 
-spec4_est.all_pdp_axis(model='cf', alpha=0.1)
-all_pdp_plots(spec4_est.x_axis_pdp, spec4_est.y_axis_pdp, model='cf', spec='spec4')
-#* ICE 
-#get all ICE axes for specifications 
-#linear model
-spec4_est.all_ice_axis(model='linear')
-all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='linear')
-#cf model 
-spec4_est.all_ice_axis(model='cf')
-all_ice_plots(spec4_est.x_axis_ice, spec4_est.y_axis_ice, model='cf')
-# #* ALE 
-# #linear
-# all_ale_plots(spec1_est, model='linear', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_linear')
-# #cf
-# all_ale_plots(spec1_est, model='cf', bins=20, bootstrap=True, n_sample=spec1_est.x_test.shape[0], figname='spec1_cf')
-
-#* Test ITE-ATE
-testresults_lin=ite_ate_test(spec4_est, 'linear')
-print(sum(testresults_lin[1]))
-testresults_cf=ite_ate_test(spec4_est, 'cf')
-print(sum(testresults_cf[1]))
-
+do_analysis(spec4_est, 'spec4')
+# #* Test ITE-ATE
+# testresults_lin=ite_ate_test(spec4_est, 'linear')
+# print(sum(testresults_lin[1]))
+# testresults_cf=ite_ate_test(spec4_est, 'cf')
+# print(sum(testresults_cf[1]))
 print('Spec 4 done')
-

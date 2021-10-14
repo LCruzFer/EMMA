@@ -401,3 +401,7 @@ class fitDML(data_utils):
         
         '''
         
+class analysis_utils(): 
+    '''
+    Class for analysis tools.
+    '''
