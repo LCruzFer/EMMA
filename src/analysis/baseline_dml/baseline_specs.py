@@ -267,7 +267,8 @@ def str_to_tex(file, tex_str):
     tex_file.write(tex_str)
     tex_file.close()
 
-def all_ale_plots(spec, model, bins=20, bootstrap=False,
+def all_ale_plots(spec, model, bins=20,         
+                bootstrap=False,
                 bootstrap_samples=1000, n_sample=500, alpha=0.05, cut=1, 
                 figname='ALE'): 
     '''

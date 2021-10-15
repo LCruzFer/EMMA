@@ -160,10 +160,10 @@ class fitDML(data_utils):
         *folds=folds for CV, int or list 
         '''
         #initialize DML model with tuned parameters
-        self.linDML=LinearDML(model_y=RFR(n_estimators=500,
+        self.linDML=LinearDML(model_y=RFR(n_estimators=5000,
                                     max_depth=params_Y['max_depth'],       
                                     min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                        model_t=RFR(n_estimators=500,
+                        model_t=RFR(n_estimators=5000,
                                     max_depth=params_T['max_depth'],    
                                     min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
                         cv=folds, fit_cate_intercept=True
@@ -188,14 +188,14 @@ class fitDML(data_utils):
         *folds=folds for CV, int or list 
         '''
         #initialize DML model with tuned parameters
-        self.cfDML=CausalForestDML(model_y=RFR(n_estimators=1000,
+        self.cfDML=CausalForestDML(model_y=RFR(n_estimators=5000,
                                     max_depth=params_Y['max_depth'],       
                                     min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
-                        model_t=RFR(n_estimators=1000,
+                        model_t=RFR(n_estimators=5000,
                                     max_depth=params_T['max_depth'],    
                                     min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
                         cv=folds,
-                        n_estimators=10000, 
+                        n_estimators=20000, 
                         drate=False, 
                         )
         print('Model set up!')
