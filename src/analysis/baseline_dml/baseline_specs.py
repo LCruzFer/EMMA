@@ -244,11 +244,14 @@ def cdf_figure(spec, models, figname):
         ax.plot(cdf['point_estimate'][0], cdf['point_estimate'][1], color=colors[0], label=labels[0])
         ax.plot(cdf['ci_upper'][0], cdf['ci_upper'][1], color=colors[1], label=labels[1])
         ax.plot(cdf['ci_lower'][0], cdf['ci_lower'][1], color=colors[2], label=labels[2])
+        ax.set_title(f'CDF of MPC using {mod} model')
     #set global legend 
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
     #save figure
     plt.savefig(fig_out/'CDF'/outcome/figname)
+    fig.clf()
+    plt.close()
     return(fig, ax)
 
 def coef_var_correlation(df, coefs): 
@@ -373,7 +376,10 @@ print('Hyperparameters loaded')
 #relative to first month
 constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
-outcomes=['chTOTexp', 'chNDexp', 'chSNDexp','chFDexp','chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
+outcomes=[
+        #'chTOTexp', 'chNDexp', already done
+        'chSNDexp','chFDexp',
+        'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
 #loop over all outcomes 
 #! stopped at chNDexp spec4 (this is still missing)
 for out in outcomes:
