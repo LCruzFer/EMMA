@@ -172,6 +172,8 @@ def all_pdp_plots(xaxes, yaxes, model, spec):
     fig.supylabel('MPC')
     figname=spec+'PDPs_'+model
     plt.savefig(fig_out/'PDP'/outcome/figname)
+    fig.clf()
+    plt.close()
 
 def all_ice_plots(xaxes, yaxes, model): 
     '''
@@ -217,6 +219,8 @@ def all_ice_plots(xaxes, yaxes, model):
     fig.supylabel('MPC')
     figname='ICEs_'+model
     plt.savefig(fig_out/'ICE'/outcome/figname)
+    fig.clf()
+    plt.close()
 
 def cdf_figure(spec, models, figname): 
     '''
@@ -313,6 +317,7 @@ def all_ale_plots(spec, model, bins=20,
     fig.supylabel('ALE of MPC')
     #save figure
     plt.savefig(fig_out/'ALE'/outcome/figname)
+    fig.clf()
     plt.close()
 
 def do_analysis(spec, specname): 
@@ -320,7 +325,7 @@ def do_analysis(spec, specname):
     Apply all analysis steps to spec. 
     '''
     #* CDF 
-    cdf_name='cate_df_'+specname
+    cdf_name='cdf_'+specname
     cdf_figure(spec=spec, models=['linear', 'cf'], figname=cdf_name)
     print('CDF done')
     #* PDP 
@@ -379,7 +384,8 @@ for out in outcomes:
     treatment='RBTAMT'
     #choose outcome 
     outcome=out
-
+    #set how many folds are done in second stage 
+    folds=5
     #*#########################
     #! Specification 1: using MS specification
     #*#########################
@@ -401,7 +407,6 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    folds=5
     spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     #save marginal effect results in CSV 
     spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
@@ -410,7 +415,6 @@ for out in outcomes:
     str_to_tex('spec1_lin_ate.tex', tex_str)   
     #* Estimation: Causal Forest 
     #fit causal forest model
-    folds=5
     spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     #save marginal effect results in CSV 
     spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
@@ -439,14 +443,12 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    folds=5
     spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec2_est.lin_cate_df.to_csv(results/outcome/'cate_spec2_lin.csv')
     tex_str=spec2_est.lin_ate_inf.summary().as_latex()
     str_to_tex('spec2_lin_ate.tex', tex_str)
     #* Estimation: Causal Forest 
     #fit causal forest model
-    folds=5
     spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
     tex_str=spec2_est.cf_ate_inf.summary().as_latex()
@@ -474,14 +476,12 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    folds=5
     spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
     tex_str=spec3_est.lin_ate_inf.summary().as_latex()
     str_to_tex('spec3_lin_ate.tex', tex_str)
     #* Estimation: Causal Forest 
     #fit cf model 
-    folds=5
     spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
     tex_str=spec3_est.cf_ate_inf.summary().as_latex()
@@ -511,14 +511,12 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    folds=5
     spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
     tex_str=spec4_est.lin_ate_inf.summary().as_latex()
     str_to_tex('spec4_lin_ate.tex', tex_str)
     #* Estimation: Causal Forest 
     #fit cf model 
-    folds=5
     spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
     tex_str=spec4_est.cf_ate_inf.summary().as_latex()
@@ -535,7 +533,6 @@ for out in outcomes:
     print('Start Spec 1')
     do_analysis(spec1_est, 'spec1')
     # #* Test ITE-ATE
-    #! use randomization tests for this!!!! (see http://datacolada.org/99)
     # testresults_lin=ite_ate_test(spec1_est, 'linear')
     # print(sum(testresults_lin[1]))
     # testresults_cf=ite_ate_test(spec1_est, 'cf')
