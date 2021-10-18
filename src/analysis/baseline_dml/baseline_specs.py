@@ -381,7 +381,6 @@ outcomes=[
         'chSNDexp','chFDexp',
         'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
 #loop over all outcomes 
-#! stopped at chNDexp spec4 (this is still missing)
 for out in outcomes:
     print(f'{out} start!')
     #! SET TREATMENT AND OUTCOME

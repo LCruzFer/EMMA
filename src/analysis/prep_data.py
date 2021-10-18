@@ -79,7 +79,6 @@ rbt08=rbt08.sort_values('RBTMO')
 rbt08=rbt08.drop_duplicates(subset='custid', keep='first')
 ms_data=ms_data.merge(rbt08[['custid', 'RBTMO']], on='custid', how='left')
 
-
 #* Variable Lists
 #most important observables
 observables=['AGE', 'SAVA_CTX', 'MARITAL1', 'CKBK_CTX', 'QESCROWX', 'QMRTTERM', 'ORGMRTX', 'FINCBTXM', 'FSALARYM', 'liqassii', 'adults', 'children', 'FAM_SIZE', 'QBLNCM1X', 'NEWMRRT', 'CUTENURE', 'ST_HOUS']

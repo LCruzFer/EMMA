@@ -49,7 +49,7 @@ rbt08=pd.read_csv(data_in/'2008_rawdata'/'expn08'/'rbt08.csv')
 rbtrcvd=rbt08[rbt08['RBTMO']<5]['NEWID']
 #only keep relevant variables that we have in main data 
 variables=['NEWID', 'intrvwno', 'QINTRVYR', 'QINTRVMO', 'AGE_REF', 'SAVACCTX', 'MARITAL1', 'CKBKACTX', 'FINCBTXM', 'FSALARYM', 'CUTENURE', 'ST_HOUS', 'PERSLT18', 'AGE2', 'FAM_SIZE']
-#not in fmli: 'QESCROWX', 'QMRTTERM', 'ORGMRTX', 'QBLNCM1X', 'NEWMRRT'  
+#not in fmli: 'QESCROWX', 'QMRTTERM', 'ORGMRTX', 'QBLNCM1X', 'NEWMRRT'
 raw_vars=raw[variables]
 #drop irrelevant months 
 months=[1, 2, 3, 4]
@@ -84,7 +84,7 @@ scaled=scaler.fit_transform(df)
 #*#########################
 #* Apply k means algorithm
 #set number of clusters
-n_clust=10
+n_clust=5
 #set up Kmeans
 kmeans=KMeans(init='random', n_clusters=n_clust, n_init=10, max_iter=300, random_state=42)
 #fit K-means algorithm 
@@ -94,40 +94,19 @@ liquid_df['group']=kmeans.labels_
 #get group-month averages of liquidity
 liquid_df=liquid_df.reset_index(level='QINTRVMO')
 liqavg=liquid_df.groupby(['group', 'QINTRVMO']).mean().reset_index()
+liqmedian=liquid_df.groupby(['group', 'QINTRVMO']).median().reset_index()
+liqavg=liqavg.merge(liqmedian, on=['group', 'QINTRVMO'])
 liqavg['pre_announce']=((liqavg['QINTRVMO']==1)|(liqavg['QINTRVMO']==2)).astype(int)
 liqavg2=liqavg[['group', 'pre_announce', 'liqassii']].groupby(['group', 'pre_announce']).mean()
 liqavg2=liqavg2.reset_index()
+
 #* Plot 
 #get array with group numbers
 groups=np.linspace(start=0, stop=n_clust-1, num=n_clust, dtype=int)
 #set months for x axis
-months=[0, 1]
+months=[1, 2, 3, 4]
 x_axis=np.array(months)
 #then get y_axis 
-y_axis=np.array([liqavg2['liqassii'][liqavg2['group']==i] for i in groups])
+y_axis=np.array([liqavg['liqassii_x'][liqavg['group']==i] for i in groups])
 #then plot group
 group_plot(x_axis, y_axis, groups=groups)
-
-#* Group means/medians
-#what are group means and medians? 
-df=df.reset_index(level='QINTRVMO')
-df['group']=kmeans.labels_
-group_medians=df.groupby(['group']).median()
-group_means=df.groupby(['group']).mean()
-group_count=df.groupby(['group']).count().rename(columns={'QINTRVMO': 'count'})['count']
-
-#* Get correlation with increase/decrease 
-liqavg['increase']=0
-liqavg.loc[:3, 'increase']=1
-liqavg.loc[4:7, 'increase']=0
-liqavg.loc[8:11, 'increase']=1
-liqavg.loc[12:15, 'increase']=1
-liqavg.loc[16:, 'increase']=1
-liq_increase=liqavg.drop_duplicates(subset=['group', 'increase'])
-#merge with data df 
-df=df.merge(liq_increase, on='group', how='left')
-
-observables=['FINCBTXM', 'FSALARYM', 'CUTENURE', 'ST_HOUS', 'PERSLT18', 'AGE', 'FAM_SIZE']
-corr={}
-for var in observables:
-    corr[var]=np.corrcoef(df['increase'], df[var])
