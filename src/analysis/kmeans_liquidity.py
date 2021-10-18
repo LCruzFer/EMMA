@@ -40,13 +40,15 @@ def group_plot(xaxis, yaxis, groups, xlab='Month', ylab='Liquidity', title='Chan
 raw081=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli081x.csv')
 raw082=pd.read_csv(data_in/'2008_rawdata'/'intrvw08'/'fmli082.csv')
 raw=raw081.append(raw082)
+#get interview number 
+raw['intrvwno']=raw['NEWID'].apply(lambda x: int(str(x)[-1]))
 #only use households that have not yet received their rebate (!)
 #load rebate data 
 rbt08=pd.read_csv(data_in/'2008_rawdata'/'expn08'/'rbt08.csv')
 #get IDs of households that already received their rebate
 rbtrcvd=rbt08[rbt08['RBTMO']<5]['NEWID']
 #only keep relevant variables that we have in main data 
-variables=['NEWID', 'QINTRVYR', 'QINTRVMO', 'AGE_REF', 'SAVACCTX', 'MARITAL1', 'CKBKACTX', 'FINCBTXM', 'FSALARYM', 'CUTENURE', 'ST_HOUS', 'PERSLT18', 'AGE2', 'FAM_SIZE']
+variables=['NEWID', 'intrvwno', 'QINTRVYR', 'QINTRVMO', 'AGE_REF', 'SAVACCTX', 'MARITAL1', 'CKBKACTX', 'FINCBTXM', 'FSALARYM', 'CUTENURE', 'ST_HOUS', 'PERSLT18', 'AGE2', 'FAM_SIZE']
 #not in fmli: 'QESCROWX', 'QMRTTERM', 'ORGMRTX', 'QBLNCM1X', 'NEWMRRT'  
 raw_vars=raw[variables]
 #drop irrelevant months 
@@ -65,9 +67,10 @@ relevant['AGE_REF']=relevant['AGE_REF'].astype(float)
 relevant['AGE']=relevant['AGE_REF']
 relevant['AGE'][(relevant['AGE2']!=np.nan)|(relevant['AGE2']!=0)]=(relevant['AGE2']+relevant['AGE_REF'])/2
 relevant=relevant.drop(['AGE2', 'AGE_REF'], axis=1)
+#create liquidity variable: if one of the reported is NaN make sure that liquidity=other variable 
+relevant['liqassii']=relevant['SAVACCTX'].add(relevant['CKBKACTX'], fill_value=0)
+relevant[['liqassii', 'SAVACCTX', 'CKBKACTX']]
 relev_nona=relevant.dropna()
-relev_nona['liqassii']=relev_nona['SAVACCTX']+relev_nona['CKBKACTX']
-
 #for grouping ignore liquidity, year is 2008 anyway and nor relevant 
 df=relev_nona.drop(['SAVACCTX', 'CKBKACTX', 'QINTRVYR'], axis=1).set_index(['NEWID', 'QINTRVMO'], drop=True)
 liquid_df=df[['liqassii']]
@@ -81,7 +84,7 @@ scaled=scaler.fit_transform(df)
 #*#########################
 #* Apply k means algorithm
 #set number of clusters
-n_clust=5
+n_clust=10
 #set up Kmeans
 kmeans=KMeans(init='random', n_clusters=n_clust, n_init=10, max_iter=300, random_state=42)
 #fit K-means algorithm 
@@ -91,15 +94,17 @@ liquid_df['group']=kmeans.labels_
 #get group-month averages of liquidity
 liquid_df=liquid_df.reset_index(level='QINTRVMO')
 liqavg=liquid_df.groupby(['group', 'QINTRVMO']).mean().reset_index()
-
+liqavg['pre_announce']=((liqavg['QINTRVMO']==1)|(liqavg['QINTRVMO']==2)).astype(int)
+liqavg2=liqavg[['group', 'pre_announce', 'liqassii']].groupby(['group', 'pre_announce']).mean()
+liqavg2=liqavg2.reset_index()
 #* Plot 
 #get array with group numbers
 groups=np.linspace(start=0, stop=n_clust-1, num=n_clust, dtype=int)
 #set months for x axis
-months=[1, 2, 3, 4]
+months=[0, 1]
 x_axis=np.array(months)
 #then get y_axis 
-y_axis=np.array([liqavg['liqassii'][liqavg['group']==i] for i in groups])
+y_axis=np.array([liqavg2['liqassii'][liqavg2['group']==i] for i in groups])
 #then plot group
 group_plot(x_axis, y_axis, groups=groups)
 
