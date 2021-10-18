@@ -377,10 +377,11 @@ print('Hyperparameters loaded')
 constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
-        #'chTOTexp', 'chNDexp', already done
-        'chSNDexp','chFDexp',
+        #'chTOTexp', 'chNDexp', 'chSNDexp', #!-> already done
+        'chFDexp',
         'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
 #loop over all outcomes 
+#!stopped after spec3 of chFDexp!!!
 for out in outcomes:
     print(f'{out} start!')
     #! SET TREATMENT AND OUTCOME
