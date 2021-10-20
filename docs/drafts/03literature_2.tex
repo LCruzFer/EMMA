@@ -6,49 +6,47 @@ Quasi-experimental settings appear all the time in the real world, e.g. in case 
 Gelman et al. (2018) use the government shutdown in the U.S. as a transitory liquidity shock. Hence, contrary to other literature they only estimate how liquidity changes the consumption behavior and not the MPC directly. Still, their setup allows them to disentangle the pure effect a liquidity shock has on consumers spending as government workers receive a payback of their wage once the government shutdown is over. Hence, there are no changes in expected income. Meanwhile, studies using income shocks cannot quantify what effect stems from the liquidity channel and what stems from changes in expected income. Their findings highlight that low liquid households react more to a negative liquidity shock as they have no assets to fall back on. Low liquid government workers started postponing their credit card payments, while simultaneously increasing the amount spend using them. \textbf{probably only add very short inside of this as not so much related to raw MPC and little/bad heterogeneity investigation} \\
 The second strand of literature uses survey data from field surveys that question households about potential or actually relaized income shocks and how their reaction looks like. \cite{bunn_etal} use (\textbf{use twice here}) data collected by the Bank of England to assess the asymmetry that we expect in households' reaction depending on the sign of the income shock. As mentioned before, the liquidity channel suggests that an unanticipated shock calls for a stronger reaction if its negative. Indeed, the authors are able to provide ample evidence for such a reaction with their estimated MPC out of a negative shock being being between 5 to 12 times as high as the reaction to a positive shock. The balance sheet data their source provides also enables them to show that borrowers show a more pronounced asymmetry and reaction, which is also in line with the theoretical mechanisms of the liquidity channel. This also holds for households that face some kind of liquidity constraint. Additionally, Bunn et al. are capable of replicating their estimated MPCs in a model with households at the borrowing constraint. These findings are further underlined by Christelis et al. (2019) who use Dutch data for a similar study. Summarizing these studies strongly suggest the existence of the mechanisms related to households at their borrowing constraint and precautionatry saving motives (\textbf{the latter must be elaborated on in intro}). 
 
-\subsection{2008 Tax Stimulus}
-Lastly, we want to elaborate in more detail two already mentioned quasi-experimental studies: \cite{parker_etal_13} and \cite{ms_14}. These two studies have been quite influential when it comes to studying MPC heterogeneity and use the same dataset as we do. Therefore, we want to lay out their approache sin detecting heterogeneity in greater detail here and highlight the major advantages our estimation approach offers. Compared to the general literature, we are the first to focus on the form of the heterogeneities reported in the literature so far (\textbf{check whether this isn't too bold of a claim}). \\
-Thanks to \cite{parker_etal_13}, the 2008 and 2009 BLS added questions about the tax stimulus to the CEX survey. \cite{parker_etal_13} use this data to first estimate a simple homogenous model controlling for age and the change in the family size using Ordinary Least Squares (OLS). Meanwhile, they set off to detect heterogeneity using interaction terms. More precisely, similar to \cite{golosov_etal} they create dummies that signal to which quartile a household belongs, where the quartiles are defined based on the distribution of various variables. The interaction terms then capture systematic differences between households across these quartiles. However, as we have already pointed out, this procedure can be quite problematic. It increases the potential to miss substantial heterogeneity across households. For example, consider the case where the largest heterogeneity is between the top 10\% and the top 20\% of households along some distribution. The approach using sample splitting or dummy variables is not capable of detecting these heterogeneities as those households belong to the same category. Additionally to this problem, using an OLS estimator, \cite{parker_etal_13} completely ignore any panel dynamics that might take place. Meanwhile, individual level fixed effects are identified as a strong potential channel that drives heterogeneity in MPC. The results by \cite{parker_etal_13} are therfore potentially biased (\textbf{two times potential}). \\
-To adress the heterogeneity issue, \cite{ms_14} follow a new approach: they employ a quantile regression estimator to estimate the heterogenous response of households to receiving the rebate. The quantile regression estimator is similar to the OLS but estimating conditional quantiles instead of the conditional mean. The authors therefore claim to estimate the conditional MPC out of the rebate for any quantile of consumption change. However, there are severe dissimilarities with what they are actually estimating and what they interpret. QR estimates how much a variable affects the outcome at a given quantile, e.g. the 10\% quantile, of the conditional distribution of the outcome. 
+\subsection{2008 Tax Stimulus Studies}
+In using the 2008 tax rebate as the income shock and data collected by the CEX, we are by default closely related to \cite{parker_etal_13} and \cite{ms_14}. The former collaborated with the Bureau of Labor Statistics (BLS) to add specific questions to the CEX and provide the first analysis using this data. \cite{ms_14} use the same dataset to assess the MPC out of the the tax stimulus applying Quantile Regression. This supposedly allows them to recover the whole conditional distribution of the MPC. However, there are reasons to doubt this claim, which we discuss further down. \\
+\cite{parker_etal_13} estimate their rebate coefficient using OLS and Two Stage Least Squares (2SLS) estimators. We lay out their identification strategy in \ref{subsec:identification} and also address their motivation to instrument the amount of tax stimulus. Both estimators only allow for a limited investigation of heterogeneity. Parker et al. propopse interaction terms between tax stimulus received and proxy measures for liquidity. They create dummy variables that signal whether household $i$ falls into the lowest, middle or the highest tercile along the liquidity distribution. However, the cutoffs for the terciles are not chosen based on the distribution of the proxy variable but such that each categroy has roughly the same number of tax rebate recipients within a given quarter. Next to simply splitting the sample based on such categorizations and estimating the MPC within each sample, this interaction based approach is quite common in the literature. However, it suffers from the major drawback that the cutoffs to identifiy specific subgroups are exogenously set by the researcher. This harbors the danger that heterogeneity patterns within these subgroups or across smaller subgroups are impossible to find. Consider the case in which heterogeneity is strongest within the lowest tercile of liquidity. Given the medium size of the liquidity shock, not a large amount of liquid assets is necessary to borrow beforehand and smooth consumption over time. Under the LCPIH, we expect only households with very small amounts of liquid asseets or no access to these at all to not smooth consumption. Therefore, setting the cutoff of liquidity too high for the lowest group can potentially lead to missing out the strongest heterogeneities driven by liquidity. \\
+Finally, we want to briefly address \cite{ms_14} and their use of Quantile Regression (QR). QR was developed by Kohnker (FIND CITATION) to estimate the conditional quantile of a distribution and the regression coefficient of variables at this quantile. To do so, QR minimizes the least absolute deviation (LAD) of some $X\beta$ from the outcome instead of the least squares deviation as in OLS or other linear regression methods. The LAD is minimized by choosing coefficients $\beta$ and to find the coefficients for the $\tau^{th}$ quantile of the conditional distribution of the outcome the LAD is weighted with $\tau$ and $1-\tau$, respectively. A more detailed explanation is provided by \cite{ms_14} or in Kohnker's XXXX paper in which he introduced the quantile regression. \\
+However, the QR approach by \cite{ms_14} suffers from a severe misinterpretation of what the QR coefficients represent as well as what underlying assumptions are made for QR to work out. In our setting, the coefficient $\beta$ of the rebate variable $R_{it}$ shows the marginal effect of $R_{it}$ on the $\tau^{th}$ quantile of the distribution of consumption change. More intuitively, it shows how much the $\tau^{th}$ percentile of the distribution of consumption change shifts given treatment. However, 
 
-\textbf{after mentioning all studies, here notes on why sample splitting or dummies are way worse than my approach}
-While their procedure of sample cutting is common in the literature, it is an inconvenient procedure to detect heterogeneity as it only allows the authors to analyse differences between their pre-defined groups. Hence, in case heterogeneity is strongest between other groups, their findings underestimate or even completely miss patterns in the data.
-
-\subsection{Channel description}
-\textbf{This will be pushed/worked into another section: decide whether at beginning of literature review or in introduction; for now here only to formulate something in a more consistent manner than what's in the intro right now} \\
-The theoretical literature has identified several channels which drive MPC heterogeneity. The two most prominent ones are life-cycle dynamics and liquidity. The former is driven by a consumer's age and the associated fluctuation in income. As data consistently shows (sources), consumption follows a hump shape over the life-cycle. In the case of liquiditiy, its role is linked to the nature of the income shock and completeness of the credit market. If a positive income shock is anticipated, households that are already close to or at their borrowing constraint cannot borrow new funds to smooth consumption in anticipation of a higher future income. Thus, once the shock realizes, we will observe an increase in consumption - although if we follow the PIH, this increase is rather small as the additional income is spread out over all future periods. In case of a negative anticipated shock, saving is always possible for any household and hence we will not see a reaction once the shock realizes. E.g. \cite{bunn_etal} document this asymmetry depending on the sign of the shock (\textbf{they document this for unanticipated shocks, shift back}). Thus, more liquid households react less to a positive anticipated shock in comparison with liquiditiy constrained ones. In contrast, in case of an unanticipated shock, we expect the opposite. Think of an agent that is temporarily out of work and has no liquid wealth at their disposal. In case of a negative shock, the agent is forced to adjust their consumption behavior downward. Meanwhile, a positive shock will always be saved and stretched over future periods, no matter the level of households' liquidity. However, these theoretical predictions are made within a permanent income framework in which households try to smooth consumption over time.\\ 
-\textbf{Literature Notes}\\ 
-Parker et al. (2013) 
-\begin{itemize}
-    \item three sources of variation exist: 
-    \begin{enumerate}
-        \item timingand type of payment
-        \item amount 
-        \item type of payment
-    \end{enumerate}
-    \item result: on avg. hosueholds spent 12-30\% of rebate on nondurable consumption goods $\rightarrow$ significant 
-    \item life-cycle/PIH model (LCPIH) is rejected by these findings 
-    \item LCPIH: no response to anticipated shocks at timing of arrival $\rightarrow$ borrowing/liquidity constraints may be main driver 
-    \item prior research: larger payments may skew consumption/usage of rebate towards durables (Souleles (1999) finds significant increase in ND and D goods in response to larger payments (federal tax refund in springtime))
-    \item problem data: assets are not measured in detail and frequently 
-    \item find no significant response (interpret it anyway)
-    \item keep in mind that tax rebate was disbursed during time of major economic downturn/turmoil
-    \item look at relationship to owning house compared to renters $\rightarrow$ homeowners spend more than renters
-    \item closest literature: Agarwal, Liu and Souleles (2007); Broda and Parker (2008); Bertrand and Morse (2009)
-    \item Tax rebate 
-    \begin{itemize}
-        \item at least 300 (couples 600), at most 600 (1200) if 300+tax liability are above 600 
-        \item at least 3000\$ qualifying income 
-        \item phased out with income starting at 75000\$: 5\% reduction of amount gross income exceeds 75k (couples 150k)
-        \item hh received a notice in advance of payment $\rightarrow$ anticipated shock!
-    \end{itemize}
-    \item CEX 
-    \begin{itemize}
-        \item questions were added from june 2008 to march 2009 
-        \item use 2007 and 2008 waves of CEX (2008 data includes first quarter of 2009)
-    \end{itemize}
-    \item identification 
-    \begin{itemize}
-        \item use 
-    \end{itemize}  
-\end{itemize}
+% \subsection{Channel description}
+% \textbf{This will be pushed/worked into another section: decide whether at beginning of literature review or in introduction; for now here only to formulate something in a more consistent manner than what's in the intro right now} \\
+% The theoretical literature has identified several channels which drive MPC heterogeneity. The two most prominent ones are life-cycle dynamics and liquidity. The former is driven by a consumer's age and the associated fluctuation in income. As data consistently shows (sources), consumption follows a hump shape over the life-cycle. In the case of liquiditiy, its role is linked to the nature of the income shock and completeness of the credit market. If a positive income shock is anticipated, households that are already close to or at their borrowing constraint cannot borrow new funds to smooth consumption in anticipation of a higher future income. Thus, once the shock realizes, we will observe an increase in consumption - although if we follow the PIH, this increase is rather small as the additional income is spread out over all future periods. In case of a negative anticipated shock, saving is always possible for any household and hence we will not see a reaction once the shock realizes. E.g. \cite{bunn_etal} document this asymmetry depending on the sign of the shock (\textbf{they document this for unanticipated shocks, shift back}). Thus, more liquid households react less to a positive anticipated shock in comparison with liquiditiy constrained ones. In contrast, in case of an unanticipated shock, we expect the opposite. Think of an agent that is temporarily out of work and has no liquid wealth at their disposal. In case of a negative shock, the agent is forced to adjust their consumption behavior downward. Meanwhile, a positive shock will always be saved and stretched over future periods, no matter the level of households' liquidity. However, these theoretical predictions are made within a permanent income framework in which households try to smooth consumption over time.\\ 
+% \textbf{Literature Notes}\\ 
+% Parker et al. (2013) 
+% \begin{itemize}
+%     \item three sources of variation exist: 
+%     \begin{enumerate}
+%         \item timingand type of payment
+%         \item amount 
+%         \item type of payment
+%     \end{enumerate}
+%     \item result: on avg. hosueholds spent 12-30\% of rebate on nondurable consumption goods $\rightarrow$ significant 
+%     \item life-cycle/PIH model (LCPIH) is rejected by these findings 
+%     \item LCPIH: no response to anticipated shocks at timing of arrival $\rightarrow$ borrowing/liquidity constraints may be main driver 
+%     \item prior research: larger payments may skew consumption/usage of rebate towards durables (Souleles (1999) finds significant increase in ND and D goods in response to larger payments (federal tax refund in springtime))
+%     \item problem data: assets are not measured in detail and frequently 
+%     \item find no significant response (interpret it anyway)
+%     \item keep in mind that tax rebate was disbursed during time of major economic downturn/turmoil
+%     \item look at relationship to owning house compared to renters $\rightarrow$ homeowners spend more than renters
+%     \item closest literature: Agarwal, Liu and Souleles (2007); Broda and Parker (2008); Bertrand and Morse (2009)
+%     \item Tax rebate 
+%     \begin{itemize}
+%         \item at least 300 (couples 600), at most 600 (1200) if 300+tax liability are above 600 
+%         \item at least 3000\$ qualifying income 
+%         \item phased out with income starting at 75000\$: 5\% reduction of amount gross income exceeds 75k (couples 150k)
+%         \item hh received a notice in advance of payment $\rightarrow$ anticipated shock!
+%     \end{itemize}
+%     \item CEX 
+%     \begin{itemize}
+%         \item questions were added from june 2008 to march 2009 
+%         \item use 2007 and 2008 waves of CEX (2008 data includes first quarter of 2009)
+%     \end{itemize}
+%     \item identification 
+%     \begin{itemize}
+%         \item use 
+%     \end{itemize}  
+% \end{itemize}
