@@ -162,10 +162,12 @@ class fitDML(data_utils):
         #initialize DML model with tuned parameters
         self.linDML=LinearDML(model_y=RFR(n_estimators=5000,
                                     max_depth=params_Y['max_depth'],       
-                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features'], 
+                                    n_jobs=4), 
                         model_t=RFR(n_estimators=5000,
                                     max_depth=params_T['max_depth'],    
-                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features'], 
+                                    n_jobs=4), 
                         cv=folds, fit_cate_intercept=True
                         )
         print('Model set up!')
@@ -190,10 +192,12 @@ class fitDML(data_utils):
         #initialize DML model with tuned parameters
         self.cfDML=CausalForestDML(model_y=RFR(n_estimators=5000,
                                     max_depth=params_Y['max_depth'],       
-                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features']), 
+                                    min_samples_split=params_Y['min_samples_leaf'], max_features=params_Y['max_features'], 
+                                    n_jobs=4), 
                         model_t=RFR(n_estimators=5000,
                                     max_depth=params_T['max_depth'],    
-                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features']), 
+                                    min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features'], 
+                                    n_jobs=4), 
                         cv=folds,
                         n_estimators=20000, 
                         drate=False, 
@@ -392,16 +396,3 @@ class fitDML(data_utils):
         variables=self.x_cols
         for var in variables: 
             self.ice(var, model=model)
-    
-    def ale(self, model): 
-        '''
-        There is already a python package: https://github.com/blent-ai/ALEPython -> also has some resources 
-        main information page: https://christophm.github.io/interpretable-ml-book/ale.html#fn32 
-        
-        
-        '''
-        
-class analysis_utils(): 
-    '''
-    Class for analysis tools.
-    '''

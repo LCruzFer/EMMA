@@ -252,7 +252,6 @@ def cdf_figure(spec, models, figname):
     plt.savefig(fig_out/'CDF'/outcome/figname)
     fig.clf()
     plt.close()
-    return(fig, ax)
 
 def coef_var_correlation(df, coefs): 
     '''
@@ -377,8 +376,8 @@ print('Hyperparameters loaded')
 constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
-        #'chTOTexp', 'chNDexp', 'chSNDexp', #!-> already done
-        'chFDexp',
+        #!-> already done
+        #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp',
         'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
 #loop over all outcomes 
 #!stopped after spec3 of chFDexp!!!
@@ -499,8 +498,6 @@ for out in outcomes:
     #! Specification 4: All financial variables
     #*#########################
     #spec 4 uses all financial variables (smallest sample available)
-
-    #! FULL SAMPLE
     #* Setup
     #choose x_cols 
     spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
