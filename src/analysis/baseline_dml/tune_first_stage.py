@@ -47,7 +47,7 @@ def tune_rf(params, X, Y):
     #initialize random forest 
     rfr=RFR()
     #apply gridsearch 
-    gs_cv=GridSearchCV(rfr, param_grid=params)
+    gs_cv=GridSearchCV(rfr, param_grid=params, n_jobs=4)
     #then fit to data 
     gs_cv.fit(X=X, y=Y)
     #and retrieve best parameters based on this data 
@@ -63,7 +63,7 @@ variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
 #set treatment
 treatment='RBTAMT'
 #set outcomes
-outcomes=['chTOTexp', 'chNDexp', 'chSNDexp','chFDexp','chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
+outcomes=['chENTERTexp', 'chCARTKNexp', 'chCARTKUexp', 'chOTHVEHexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp']
 #constants 
 constants=['const'+str(i) for i in range(1, 15)]
 
@@ -77,7 +77,12 @@ spec1=['AGE', 'AGE_sq', 'chFAM_SIZE', 'chFAM_SIZE_sq']+constants
 spec2=spec1+['married']
 spec3=spec2+['liqassii', 'FINCBTXM', 'FSALARYM']
 spec4=spec3+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
-specs=[spec1, spec2, spec3, spec4]
+specs=[
+    spec1, 
+    spec2, 
+    spec3, 
+    spec4
+    ]
 #set up dataframe on which results will be merged 
 all_params=pd.DataFrame(index=['max_depth', 'min_samples_leaf', 'max_features'])
 #for each specification, tune random forest for treatment and for each outcome variables
@@ -107,4 +112,4 @@ for i, spec in enumerate(specs):
         print(f'{outcome} params for spec {i+1} found.')
 
 #write into csv 
-all_params.to_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
+all_params.to_csv(data_out/'transformed'/'first_stage_hyperparameters_subcomponents.csv')

@@ -8,6 +8,7 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
+import matplotlib.ticker as plticker
 
 #* set system path to import utils
 wd=Path.cwd()
@@ -43,42 +44,6 @@ def retrieve_params(params_df, treatment, outcome, spec):
     params_T={param: val for param, val in zip(params_df.index, params_df[treat_col])}
     params_Y={param: val for param, val in zip(params_df.index, params_df[spec_col])}
     return params_T, params_Y
-
-def split_sample(df):
-    ind=np.random.uniform(low=0, high=len(df), size=int(len(df)/2)).astype(int)
-    s1=df.iloc[ind, :]
-    s2=df.iloc[~ind, :]
-    return s1, s2
-
-def z_test(b, b0, se1, se2): 
-    '''
-    Calculate z teststatistic.
-    '''
-    test=(b-b0)/np.sqrt((se1**2+se2**2))
-    return test
-
-def ite_ate_test(spec, model): 
-    #! THIS NEEDS IMPROVEMENT
-    '''
-    z-test whether ITE is significantly different from ATE.
-    *spec=fitDML object
-    *model=str, choose which model should be looked at
-    '''
-    #get estimator depending on model
-    estim=spec.selectmodel(model)
-    xtest1, xtest2=split_sample(spec.x_test)
-    #get ate inference in first sample
-    ate_inf=estim.const_marginal_ate_inference(X=xtest1)
-    #fit model to second sample
-    cate_ate_df=estim.const_marginal_effect_inference(X=xtest2).summary_frame()
-    cate_ate_df['ATE']=ate_inf.mean_point
-    #adjust SE of ATE for sample size
-    cate_ate_df['ATE_stderr']=ate_inf.stderr_mean/len(xtest1)
-    #conduct a Z test
-    results=z_test(cate_ate_df['point_estimate'], cate_ate_df['ATE'], cate_ate_df['stderr'], cate_ate_df['ATE_stderr'])
-    #also return which observations are significant 
-    sig=results.abs()>=1.64
-    return results, sig
 
 def subplots_canvas(variables): 
     #want 3 columns 
@@ -232,24 +197,48 @@ def cdf_figure(spec, models, figname):
     for mod in models: 
         spec.get_cdfs(model=mod)
     #set up figure with one column for each model
-    fig, axes=plt.subplots(nrows=1, ncols=len(models))
+    fig, axes=plt.subplots(nrows=1, 
+                        ncols=len(models), 
+                        figsize=(20, 10))
     #set colors (order: pe, upper ci, lower ci)
-    colors=['blue', 'red', 'red']
+    colors=['limegreen', 'crimson', 'crimson']
     labels=['Point Estimate', 'upper CI', 'lower CI']
     #on each axis plot cdf of one model
     for ax, mod in zip(axes, models):
         #get cdf dict of model
         cdf=spec.cdfs[mod]
         #plot cdf of model on axis
-        ax.plot(cdf['point_estimate'][0], cdf['point_estimate'][1], color=colors[0], label=labels[0])
-        ax.plot(cdf['ci_upper'][0], cdf['ci_upper'][1], color=colors[1], label=labels[1])
-        ax.plot(cdf['ci_lower'][0], cdf['ci_lower'][1], color=colors[2], label=labels[2])
+        ax.plot(cdf['point_estimate'][0], 
+                cdf['point_estimate'][1], 
+                color=colors[0], label=labels[0], 
+                linewidth=3, 
+                )
+        ax.plot(cdf['ci_upper'][0], 
+                cdf['ci_upper'][1], 
+                color=colors[1], label=labels[1], 
+                linewidth=3, 
+                )
+        ax.plot(cdf['ci_lower'][0], 
+                cdf['ci_lower'][1], 
+                color=colors[2], label=labels[2], 
+                linewidth=3, 
+                )
+        #set title of subplot
         ax.set_title(f'CDF of MPC using {mod} model')
+        #set locations of ticks using tick locator 
+        loc=plticker.MultipleLocator(base=0.5)
+        ax.xaxis.set_major_locator(loc)
+    #*global figure customization
+    #rotate xaxis ticks globally 
+    plt.xticks(rotation=45)
     #set global legend 
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
+    #set global title 
+    fig.suptitle('CDF of point estimates')
     #save figure
-    plt.savefig(fig_out/'CDF'/outcome/figname)
+    #plt.savefig(fig_out/'CDF'/outcome/figname)
+    plt.show()
     fig.clf()
     plt.close()
 
@@ -379,11 +368,12 @@ outcomes=[
         #!-> already done
         #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp',
         'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
+#!spec 1 linear of chNDexp is still using iREB as treatment
 #loop over all outcomes 
-#!stopped after spec3 of chFDexp!!!
 for out in outcomes:
     print(f'{out} start!')
     #! SET TREATMENT AND OUTCOME
+    out='chNDexp'
     #set for all specifications
     #choose treatment
     treatment='RBTAMT'
