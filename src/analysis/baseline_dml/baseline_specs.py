@@ -237,7 +237,7 @@ def cdf_figure(spec, models, figname):
     #set global title 
     fig.suptitle('CDF of point estimates')
     #save figure
-    #plt.savefig(fig_out/'CDF'/outcome/figname)
+    plt.savefig(fig_out/'CDF'/outcome/figname)
     plt.show()
     fig.clf()
     plt.close()
@@ -351,7 +351,8 @@ variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
 print('Variables loaded')
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
-hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
+hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters_subcomponents.csv')
+hyperparams=hyperparams.drop('RBTAMT_spec4_x', axis=1).rename(columns={'RBTAMT_spec4_y': 'RBTAMT_spec4'})
 #rename hyperparams column 
 hyperparams=hyperparams.rename(columns={'Unnamed: 0': 'param'})
 #need to turn some entries into integers that are read in str 
@@ -366,14 +367,18 @@ constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
         #!-> already done
-        #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp',
-        'chUTILexp', 'chVEHINSexp', 'chVEHFINexp']
-#!spec 1 linear of chNDexp is still using iREB as treatment
+        #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 'chCARTKNexp',
+        #! missing but not that relevant
+        #'chUTILexp', 'chVEHINSexp', 'chVEHFINexp', 
+        'chCARTKUexp', 'chPUBTRAexp', 
+        'chAPPARexp', 'chHEALTHexp'
+        ]
+#sub_outcomes=['chENTERTexp', 'chCARTKNexp', 'chCARTKUexp', 'chOTHVEHexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp']
+#! got to chCARTKUexp Spec 4 linear model fitted !!
 #loop over all outcomes 
 for out in outcomes:
     print(f'{out} start!')
     #! SET TREATMENT AND OUTCOME
-    out='chNDexp'
     #set for all specifications
     #choose treatment
     treatment='RBTAMT'
