@@ -351,8 +351,7 @@ variables=pd.read_csv(data_out/'transformed'/'prepped_data.csv')
 print('Variables loaded')
 #* Random Forest Hyperparameters
 #read in hyperparameters for RF - output from tune_first_stage.py
-hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters_subcomponents.csv')
-hyperparams=hyperparams.drop('RBTAMT_spec4_x', axis=1).rename(columns={'RBTAMT_spec4_y': 'RBTAMT_spec4'})
+hyperparams=pd.read_csv(data_out/'transformed'/'first_stage_hyperparameters.csv')
 #rename hyperparams column 
 hyperparams=hyperparams.rename(columns={'Unnamed: 0': 'param'})
 #need to turn some entries into integers that are read in str 
@@ -369,12 +368,11 @@ outcomes=[
         #!-> already done
         #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 'chCARTKNexp',
         #! missing but not that relevant
-        #'chUTILexp', 'chVEHINSexp', 'chVEHFINexp', 
-        'chCARTKUexp', 'chPUBTRAexp', 
-        'chAPPARexp', 'chHEALTHexp'
+        'chUTILexp', 'chVEHINSexp', 'chVEHFINexp', 'chCARTKUexp', 
+        # 'chPUBTRAexp', 
+        # 'chAPPARexp', 'chHEALTHexp'
         ]
 #sub_outcomes=['chENTERTexp', 'chCARTKNexp', 'chCARTKUexp', 'chOTHVEHexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp']
-#! got to chCARTKUexp Spec 4 linear model fitted !!
 #loop over all outcomes 
 for out in outcomes:
     print(f'{out} start!')
