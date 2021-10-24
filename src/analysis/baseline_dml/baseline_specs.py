@@ -366,11 +366,12 @@ constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
         #!-> already done
-        #'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 'chCARTKNexp',
+        'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
+        #'chCARTKNexp',
+        # 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp'
+        #'chUTILexp', 'chVEHINSexp', 'chENTERTexü'
         #! missing but not that relevant
-        'chUTILexp', 'chVEHINSexp', 'chVEHFINexp', 'chCARTKUexp', 
-        # 'chPUBTRAexp', 
-        # 'chAPPARexp', 'chHEALTHexp'
+        #'chVEHFINexp', 'chCARTKUexp', 
         ]
 #sub_outcomes=['chENTERTexp', 'chCARTKNexp', 'chCARTKUexp', 'chOTHVEHexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp']
 #loop over all outcomes 
@@ -406,19 +407,22 @@ for out in outcomes:
     #* Estimation: Linear
     #fit linear model 
     spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #save marginal effect results in CSV 
-    spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
-    #save ATE results in latex table 
-    tex_str=spec1_est.lin_ate_inf.summary().as_latex()
-    str_to_tex('spec1_lin_ate.tex', tex_str)   
-    #* Estimation: Causal Forest 
-    #fit causal forest model
-    spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #save marginal effect results in CSV 
-    spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
-    #save ATE results in latex table 
-    tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec1_cf_ate.tex', tex_str)
+    #get coefficients of interaction terms in linear model
+    lin_inf_tex=spec1_est.linDML.summary().as_latex()
+    str_to_tex('lin_coefs_spec1.tex', lin_inf_tex)
+    # #save marginal effect results in CSV 
+    # spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
+    # #save ATE results in latex table 
+    # tex_str=spec1_est.lin_ate_inf.summary().as_latex()
+    # str_to_tex('spec1_lin_ate.tex', tex_str)   
+    # #* Estimation: Causal Forest 
+    # #fit causal forest model
+    # spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # #save marginal effect results in CSV 
+    # spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
+    # #save ATE results in latex table 
+    # tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec1_cf_ate.tex', tex_str)
     print('Spec 1 done')
 
     #*#########################
@@ -442,15 +446,19 @@ for out in outcomes:
     #* Estimation: Linear
     #fit linear model 
     spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec2_est.lin_cate_df.to_csv(results/outcome/'cate_spec2_lin.csv')
-    tex_str=spec2_est.lin_ate_inf.summary().as_latex()
-    str_to_tex('spec2_lin_ate.tex', tex_str)
-    #* Estimation: Causal Forest 
-    #fit causal forest model
-    spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
-    tex_str=spec2_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec2_cf_ate.tex', tex_str)
+    #get coefficients of interaction terms in linear model
+    lin_inf_tex=spec2_est.linDML.summary().as_latex()
+    str_to_tex('lin_coefs_spec2.tex', lin_inf_tex)
+    #save marginal effect results in csv
+    # spec2_est.lin_cate_df.to_csv(results/outcome/'cate_spec2_lin.csv')
+    # tex_str=spec2_est.lin_ate_inf.summary().as_latex()
+    # str_to_tex('spec2_lin_ate.tex', tex_str)
+    # #* Estimation: Causal Forest 
+    # #fit causal forest model
+    # spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
+    # tex_str=spec2_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec2_cf_ate.tex', tex_str)
 
     print('Spec 2 done')
 
@@ -475,15 +483,19 @@ for out in outcomes:
     #* Estimation: Linear
     #fit linear model 
     spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
-    tex_str=spec3_est.lin_ate_inf.summary().as_latex()
-    str_to_tex('spec3_lin_ate.tex', tex_str)
-    #* Estimation: Causal Forest 
-    #fit cf model 
-    spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
-    tex_str=spec3_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec3_cf_ate.tex', tex_str)
+    #get coefficients of interaction terms in linear model
+    lin_inf_tex=spec3_est.linDML.summary().as_latex()
+    str_to_tex('lin_coefs_spec3.tex', lin_inf_tex)
+    # #save marginal effect results in csv
+    # spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
+    # tex_str=spec3_est.lin_ate_inf.summary().as_latex()
+    # str_to_tex('spec3_lin_ate.tex', tex_str)
+    # #* Estimation: Causal Forest 
+    # #fit cf model 
+    # spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
+    # tex_str=spec3_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec3_cf_ate.tex', tex_str)
 
     print('Spec 3 done')
 
@@ -508,63 +520,67 @@ for out in outcomes:
     #* Estimation: Linear
     #fit linear model 
     spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
-    tex_str=spec4_est.lin_ate_inf.summary().as_latex()
-    str_to_tex('spec4_lin_ate.tex', tex_str)
-    #* Estimation: Causal Forest 
-    #fit cf model 
-    spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
-    tex_str=spec4_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec4_cf_ate.tex', tex_str)
+    #get coefficients of interaction terms in linear model
+    lin_inf_tex=spec4_est.linDML.summary().as_latex()
+    str_to_tex('lin_coefs_spec4.tex', lin_inf_tex)
+    #save marginal effect results in csv
+    # spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
+    # tex_str=spec4_est.lin_ate_inf.summary().as_latex()
+    # str_to_tex('spec4_lin_ate.tex', tex_str)
+    # #* Estimation: Causal Forest 
+    # #fit cf model 
+    # spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
+    # tex_str=spec4_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec4_cf_ate.tex', tex_str)
 
     print('Spec 4 done')
 
-    #*#########################
-    #! ANALYSIS
-    #*#########################
+    # #*#########################
+    # #! ANALYSIS
+    # #*#########################
 
-    #*#########
-    #! Spec 1 
-    print('Start Spec 1')
-    do_analysis(spec1_est, 'spec1')
-    # #* Test ITE-ATE
-    # testresults_lin=ite_ate_test(spec1_est, 'linear')
-    # print(sum(testresults_lin[1]))
-    # testresults_cf=ite_ate_test(spec1_est, 'cf')
-    # print(sum(testresults_cf[1]))
-    print('Spec 1 done')
+    # #*#########
+    # #! Spec 1 
+    # print('Start Spec 1')
+    # do_analysis(spec1_est, 'spec1')
+    # # #* Test ITE-ATE
+    # # testresults_lin=ite_ate_test(spec1_est, 'linear')
+    # # print(sum(testresults_lin[1]))
+    # # testresults_cf=ite_ate_test(spec1_est, 'cf')
+    # # print(sum(testresults_cf[1]))
+    # print('Spec 1 done')
 
-    #*#########
-    #! Spec 2 
-    print('Start Spec 2')
-    do_analysis(spec2_est, 'spec2')
-    # #* Test ITE-ATE
-    # testresults_lin=ite_ate_test(spec2_est, 'linear')
-    # print(sum(testresults_lin[1]))
-    # testresults_cf=ite_ate_test(spec2_est, 'cf')
-    # print(sum(testresults_cf[1]))
-    print('Spec 2 done')
+    # #*#########
+    # #! Spec 2 
+    # print('Start Spec 2')
+    # do_analysis(spec2_est, 'spec2')
+    # # #* Test ITE-ATE
+    # # testresults_lin=ite_ate_test(spec2_est, 'linear')
+    # # print(sum(testresults_lin[1]))
+    # # testresults_cf=ite_ate_test(spec2_est, 'cf')
+    # # print(sum(testresults_cf[1]))
+    # print('Spec 2 done')
 
-    #*#########
-    #! Spec 3 
-    print('Start Spec 3')
-    do_analysis(spec3_est, 'spec3')
-    # #* Test ITE-ATE
-    # testresults_lin=ite_ate_test(spec3_est, 'linear')
-    # print(sum(testresults_lin[1]))
-    # testresults_cf=ite_ate_test(spec3_est, 'cf')
-    # print(sum(testresults_cf[1]))
-    print('Spec 3 done')
+    # #*#########
+    # #! Spec 3 
+    # print('Start Spec 3')
+    # do_analysis(spec3_est, 'spec3')
+    # # #* Test ITE-ATE
+    # # testresults_lin=ite_ate_test(spec3_est, 'linear')
+    # # print(sum(testresults_lin[1]))
+    # # testresults_cf=ite_ate_test(spec3_est, 'cf')
+    # # print(sum(testresults_cf[1]))
+    # print('Spec 3 done')
 
-    #*#########
-    #! Spec 4 
-    print('Start Spec 4')
-    do_analysis(spec4_est, 'spec4')
-    # #* Test ITE-ATE
-    # testresults_lin=ite_ate_test(spec4_est, 'linear')
-    # print(sum(testresults_lin[1]))
-    # testresults_cf=ite_ate_test(spec4_est, 'cf')
-    # print(sum(testresults_cf[1]))
-    print('Spec 4 done')
-    print(f'{out} end!')
+    # #*#########
+    # #! Spec 4 
+    # print('Start Spec 4')
+    # do_analysis(spec4_est, 'spec4')
+    # # #* Test ITE-ATE
+    # # testresults_lin=ite_ate_test(spec4_est, 'linear')
+    # # print(sum(testresults_lin[1]))
+    # # testresults_cf=ite_ate_test(spec4_est, 'cf')
+    # # print(sum(testresults_cf[1]))
+    # print('Spec 4 done')
+    # print(f'{out} end!')
