@@ -10,8 +10,8 @@ wd=Path.cwd()
 sys.path.append(str(wd.parent))
 data_in=wd.parents[1]/'data'/'in'
 data_out=wd.parents[1]/'data'/'out'
-fig_out=wd.parents[1]/'figures'
-results=wd.parents[1]/'data'/'results'
+fig_out=wd.parents[1]/'figures_new'
+results=wd.parents[1]/'data'/'results_new'
 
 #*#########################
 #! FUNCTIONS
@@ -70,6 +70,8 @@ def distribution_fig(variable):
     '''
     #get list of result dfs
     files=os.listdir(results/variable)
+    #kick anything that isn't a csv
+    files=[file for file in files if '.csv' in file]
     files.sort()
     #set up figure 
     fig, axes=plt.subplots(nrows=4, ncols=2, figsize=[20, 15])
@@ -124,15 +126,21 @@ def distribution_fig(variable):
     fig.suptitle(f'Empirical Distribution of MPC with respect to {variable}')
     #distance between subplots
     fig.subplots_adjust(wspace=0.2, hspace=0.6)
-    plt.savefig(fig_out/'distributions'/variable,
-                facecolor='white')
+    plt.show()
+    # plt.savefig(fig_out/'distributions_new'/variable,
+    # facecolor='white')
+
+distribution_fig('chNDexp')
 
 #*#########################
 #! Create Figures
 #*#########################
-outcomes=['chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp',
-            # 'chUTILexp', 'chVEHINSexp', 'chVEHFINexp'
-            ]
+outcomes=[
+        'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
+        'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp'
+        'chUTILexp', 'chVEHINSexp', 'chENTERTexü'
+        #! missing but not that relevant
+        #'chVEHFINexp', 'chCARTKUexp', 
+        ]
 for out in outcomes: 
     distribution_fig(out)
-

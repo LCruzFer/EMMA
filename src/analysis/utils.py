@@ -199,7 +199,8 @@ class fitDML(data_utils):
                                     min_samples_split=params_T['min_samples_leaf'], max_features=params_T['max_features'], 
                                     n_jobs=4), 
                         cv=folds,
-                        n_estimators=20000, 
+                        min_samples_leaf=20,
+                        n_estimators=5000, 
                         drate=False, 
                         )
         print('Model set up!')

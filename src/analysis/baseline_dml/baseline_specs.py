@@ -21,8 +21,8 @@ from ALEPython.src.alepython import ale_dml
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
 data_out=wd.parents[2]/'data'/'out'
-fig_out=wd.parents[2]/'figures'
-results=wd.parents[2]/'data'/'results'
+fig_out=wd.parents[2]/'figures_new'
+results=wd.parents[2]/'data'/'results_new'
 
 '''
 This file estimates the baseline specifications of the linear DML model to estimate the constant marginal Conditional Average Treatment Effect (CATE), which is the MPC as a function of households characteristics.
@@ -204,41 +204,65 @@ def cdf_figure(spec, models, figname):
     colors=['limegreen', 'crimson', 'crimson']
     labels=['Point Estimate', 'upper CI', 'lower CI']
     #on each axis plot cdf of one model
-    for ax, mod in zip(axes, models):
+    if isinstance(axes, np.ndarray):
+        for ax, mod in zip(axes, models):
+            #get cdf dict of model
+            cdf=spec.cdfs[mod]
+            #plot cdf of model on axis
+            ax.plot(cdf['point_estimate'][0], 
+                    cdf['point_estimate'][1], 
+                    color=colors[0], label=labels[0], 
+                    linewidth=3, 
+                    )
+            ax.plot(cdf['ci_upper'][0], 
+                    cdf['ci_upper'][1], 
+                    color=colors[1], label=labels[1], 
+                    linewidth=3, 
+                    )
+            ax.plot(cdf['ci_lower'][0], 
+                    cdf['ci_lower'][1], 
+                    color=colors[2], label=labels[2], 
+                    linewidth=3, 
+                    )
+            #set title of subplot
+            ax.set_title(f'CDF of MPC using {mod} model')
+            #set locations of ticks using tick locator 
+            loc=plticker.MultipleLocator(base=0.5)
+            ax.xaxis.set_major_locator(loc)
+    else: 
         #get cdf dict of model
         cdf=spec.cdfs[mod]
         #plot cdf of model on axis
-        ax.plot(cdf['point_estimate'][0], 
+        axes.plot(cdf['point_estimate'][0], 
                 cdf['point_estimate'][1], 
                 color=colors[0], label=labels[0], 
                 linewidth=3, 
                 )
-        ax.plot(cdf['ci_upper'][0], 
+        axes.plot(cdf['ci_upper'][0], 
                 cdf['ci_upper'][1], 
                 color=colors[1], label=labels[1], 
                 linewidth=3, 
                 )
-        ax.plot(cdf['ci_lower'][0], 
+        axes.plot(cdf['ci_lower'][0], 
                 cdf['ci_lower'][1], 
                 color=colors[2], label=labels[2], 
                 linewidth=3, 
                 )
         #set title of subplot
-        ax.set_title(f'CDF of MPC using {mod} model')
+        axes.set_title(f'CDF of MPC using {mod} model')
         #set locations of ticks using tick locator 
         loc=plticker.MultipleLocator(base=0.5)
-        ax.xaxis.set_major_locator(loc)
+        axes.xaxis.set_major_locator(loc)
     #*global figure customization
     #rotate xaxis ticks globally 
     plt.xticks(rotation=45)
     #set global legend 
-    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = axes.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
     #set global title 
     fig.suptitle('CDF of point estimates')
     #save figure
     plt.savefig(fig_out/'CDF'/outcome/figname)
-    plt.show()
     fig.clf()
     plt.close()
 
@@ -301,6 +325,7 @@ def all_ale_plots(spec, model, bins=20,
                 for y, lab, col in zip(lines, labels, colors):
                     ax.plot(ale_dml._get_centres(quants), y, label=lab, color=col)
                     ax.set_title(feat)
+        print(f'{feat} end')
     #set global legend, title and y_axis
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
@@ -317,28 +342,15 @@ def do_analysis(spec, specname):
     '''
     #* CDF 
     cdf_name='cdf_'+specname
-    cdf_figure(spec=spec, models=['linear', 'cf'], figname=cdf_name)
+    cdf_figure(spec=spec, models=[
+                                #'linear', 
+                                    'cf'
+                                ],          
+                figname=cdf_name)
     print('CDF done')
-    #* PDP 
-    # #get all axes for specification for both models and create PDPs
-    # #linear model
-    # spec.all_pdp_axis(model='linear', alpha=0.1)
-    # all_pdp_plots(spec.x_axis_pdp, spec.y_axis_pdp, model='linear', spec=specname)
-    # #cf model 
-    # spec.all_pdp_axis(model='cf', alpha=0.1)
-    # all_pdp_plots(spec.x_axis_pdp, spec.y_axis_pdp, model='cf', spec=specname)
-    # print('PDP done')
-    # # #* ICE 
-    # #get all ICE axes for specifications 
-    # #linear model
-    # spec.all_ice_axis(model='linear')
-    # all_ice_plots(spec.x_axis_ice, spec.y_axis_ice, model='linear')
-    # #cf model 
-    # spec.all_ice_axis(model='cf')
-    # all_ice_plots(spec.x_axis_ice, spec.y_axis_ice, model='cf')
     #* ALE 
     #linear
-    all_ale_plots(spec, model='linear', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_linear')
+    #all_ale_plots(spec, model='linear', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_linear')
     #cf
     all_ale_plots(spec, model='cf', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_cf')
     print('ALE done')
@@ -365,19 +377,16 @@ print('Hyperparameters loaded')
 constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
-        #!-> already done
         'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
-        #'chCARTKNexp',
-        # 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp'
-        #'chUTILexp', 'chVEHINSexp', 'chENTERTexü'
-        #! missing but not that relevant
-        #'chVEHFINexp', 'chCARTKUexp', 
+        'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp', 
+        'chCARTKUexp',
+        #'chUTILexp', 'chVEHINSexp', 'chENTERTexp', 
+        #'chVEHFINexp',
         ]
 #sub_outcomes=['chENTERTexp', 'chCARTKNexp', 'chCARTKUexp', 'chOTHVEHexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp']
 #loop over all outcomes 
 for out in outcomes:
     print(f'{out} start!')
-    #! SET TREATMENT AND OUTCOME
     #set for all specifications
     #choose treatment
     treatment='RBTAMT'
@@ -406,23 +415,23 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #get coefficients of interaction terms in linear model
-    lin_inf_tex=spec1_est.linDML.summary().as_latex()
-    str_to_tex('lin_coefs_spec1.tex', lin_inf_tex)
+    # spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # #get coefficients of interaction terms in linear model
+    # lin_inf_tex=spec1_est.linDML.summary().as_latex()
+    # str_to_tex('lin_coefs_spec1.tex', lin_inf_tex)
     # #save marginal effect results in CSV 
     # spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
     # #save ATE results in latex table 
     # tex_str=spec1_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec1_lin_ate.tex', tex_str)   
-    # #* Estimation: Causal Forest 
-    # #fit causal forest model
-    # spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    # #save marginal effect results in CSV 
-    # spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
-    # #save ATE results in latex table 
-    # tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-    # str_to_tex('spec1_cf_ate.tex', tex_str)
+    #* Estimation: Causal Forest 
+    #fit causal forest model
+    spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    #save marginal effect results in CSV 
+    spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
+    #save ATE results in latex table 
+    tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec1_cf_ate.tex', tex_str)
     print('Spec 1 done')
 
     #*#########################
@@ -445,20 +454,20 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #get coefficients of interaction terms in linear model
-    lin_inf_tex=spec2_est.linDML.summary().as_latex()
-    str_to_tex('lin_coefs_spec2.tex', lin_inf_tex)
+    # spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # #get coefficients of interaction terms in linear model
+    # lin_inf_tex=spec2_est.linDML.summary().as_latex()
+    # str_to_tex('lin_coefs_spec2.tex', lin_inf_tex)
     #save marginal effect results in csv
     # spec2_est.lin_cate_df.to_csv(results/outcome/'cate_spec2_lin.csv')
     # tex_str=spec2_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec2_lin_ate.tex', tex_str)
     # #* Estimation: Causal Forest 
-    # #fit causal forest model
-    # spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    # spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
-    # tex_str=spec2_est.cf_ate_inf.summary().as_latex()
-    # str_to_tex('spec2_cf_ate.tex', tex_str)
+    #fit causal forest model
+    spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
+    tex_str=spec2_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec2_cf_ate.tex', tex_str)
 
     print('Spec 2 done')
 
@@ -482,20 +491,20 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #get coefficients of interaction terms in linear model
-    lin_inf_tex=spec3_est.linDML.summary().as_latex()
-    str_to_tex('lin_coefs_spec3.tex', lin_inf_tex)
+    # spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # #get coefficients of interaction terms in linear model
+    # lin_inf_tex=spec3_est.linDML.summary().as_latex()
+    # str_to_tex('lin_coefs_spec3.tex', lin_inf_tex)
     # #save marginal effect results in csv
     # spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
     # tex_str=spec3_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec3_lin_ate.tex', tex_str)
     # #* Estimation: Causal Forest 
-    # #fit cf model 
-    # spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    # spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
-    # tex_str=spec3_est.cf_ate_inf.summary().as_latex()
-    # str_to_tex('spec3_cf_ate.tex', tex_str)
+    #fit cf model 
+    spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
+    tex_str=spec3_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec3_cf_ate.tex', tex_str)
 
     print('Spec 3 done')
 
@@ -519,68 +528,45 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    #get coefficients of interaction terms in linear model
-    lin_inf_tex=spec4_est.linDML.summary().as_latex()
-    str_to_tex('lin_coefs_spec4.tex', lin_inf_tex)
+    # spec4_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # #get coefficients of interaction terms in linear model
+    # lin_inf_tex=spec4_est.linDML.summary().as_latex()
+    # str_to_tex('lin_coefs_spec4.tex', lin_inf_tex)
     #save marginal effect results in csv
     # spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
     # tex_str=spec4_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec4_lin_ate.tex', tex_str)
     # #* Estimation: Causal Forest 
-    # #fit cf model 
-    # spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    # spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
-    # tex_str=spec4_est.cf_ate_inf.summary().as_latex()
-    # str_to_tex('spec4_cf_ate.tex', tex_str)
+    #fit cf model 
+    spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
+    tex_str=spec4_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec4_cf_ate.tex', tex_str)
 
     print('Spec 4 done')
 
-    # #*#########################
-    # #! ANALYSIS
-    # #*#########################
-
-    # #*#########
-    # #! Spec 1 
-    # print('Start Spec 1')
-    # do_analysis(spec1_est, 'spec1')
-    # # #* Test ITE-ATE
-    # # testresults_lin=ite_ate_test(spec1_est, 'linear')
-    # # print(sum(testresults_lin[1]))
-    # # testresults_cf=ite_ate_test(spec1_est, 'cf')
-    # # print(sum(testresults_cf[1]))
-    # print('Spec 1 done')
-
-    # #*#########
-    # #! Spec 2 
-    # print('Start Spec 2')
-    # do_analysis(spec2_est, 'spec2')
-    # # #* Test ITE-ATE
-    # # testresults_lin=ite_ate_test(spec2_est, 'linear')
-    # # print(sum(testresults_lin[1]))
-    # # testresults_cf=ite_ate_test(spec2_est, 'cf')
-    # # print(sum(testresults_cf[1]))
-    # print('Spec 2 done')
-
-    # #*#########
-    # #! Spec 3 
-    # print('Start Spec 3')
-    # do_analysis(spec3_est, 'spec3')
-    # # #* Test ITE-ATE
-    # # testresults_lin=ite_ate_test(spec3_est, 'linear')
-    # # print(sum(testresults_lin[1]))
-    # # testresults_cf=ite_ate_test(spec3_est, 'cf')
-    # # print(sum(testresults_cf[1]))
-    # print('Spec 3 done')
-
-    # #*#########
-    # #! Spec 4 
-    # print('Start Spec 4')
-    # do_analysis(spec4_est, 'spec4')
-    # # #* Test ITE-ATE
-    # # testresults_lin=ite_ate_test(spec4_est, 'linear')
-    # # print(sum(testresults_lin[1]))
-    # # testresults_cf=ite_ate_test(spec4_est, 'cf')
-    # # print(sum(testresults_cf[1]))
-    # print('Spec 4 done')
-    # print(f'{out} end!')
+    #*#########################
+    #! ANALYSIS
+    #*#########################
+    print('Start analysis')
+    #*#########
+    #! Spec 1 
+    print('Start Spec 1')
+    do_analysis(spec1_est, 'spec1')
+    print('Spec 1 done')
+    #*#########
+    #! Spec 2 
+    print('Start Spec 2')
+    do_analysis(spec2_est, 'spec2')
+    print('Spec 2 done')
+    #*#########
+    #! Spec 3 
+    print('Start Spec 3')
+    do_analysis(spec3_est, 'spec3')
+    print('Spec 3 done')
+    #*#########
+    #! Spec 4 
+    print('Start Spec 4')
+    do_analysis(spec4_est, 'spec4')
+    print('Spec 4 done')
+    print(f'{out} end!')
