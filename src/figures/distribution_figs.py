@@ -127,18 +127,16 @@ def distribution_fig(variable):
     #distance between subplots
     fig.subplots_adjust(wspace=0.2, hspace=0.6)
     plt.show()
-    # plt.savefig(fig_out/'distributions_new'/variable,
-    # facecolor='white')
-
-distribution_fig('chNDexp')
+    plt.savefig(fig_out/'distributions'/variable,
+                facecolor='white')
 
 #*#########################
 #! Create Figures
 #*#########################
 outcomes=[
         'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
-        'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp'
-        'chUTILexp', 'chVEHINSexp', 'chENTERTexü'
+        # 'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp'
+        # 'chUTILexp', 'chVEHINSexp', 'chENTERTexü'
         #! missing but not that relevant
         #'chVEHFINexp', 'chCARTKUexp', 
         ]
