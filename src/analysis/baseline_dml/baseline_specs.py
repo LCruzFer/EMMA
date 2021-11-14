@@ -316,25 +316,78 @@ def all_ale_plots(spec, model, bins=20,
                 ax=axes
             #if bins are actually not existent, then its not possible to create the plot
             if (quants is None): 
-                pass
+                ax.axis('off')
             else:
                 #plot 
                 lines=[ci_low, ale, ci_up]
                 labels=['lower CI', 'ALE', 'upper CI']
-                colors=['red', 'green', 'red']
+                colors=['crimson', 'forestgreen', 'crimson']
                 for y, lab, col in zip(lines, labels, colors):
                     ax.plot(ale_dml._get_centres(quants), y, label=lab, color=col)
                     ax.set_title(feat)
         print(f'{feat} end')
     #set global legend, title and y_axis
-    handles, labels = ax.get_legend_handles_labels()
+    handles, labels=ax.get_legend_handles_labels()
     fig.legend(handles, labels, bbox_to_anchor=(1,0.5), loc='upper left')
     fig.suptitle(f'Partial Dependence Plots {model} model')
     fig.supylabel('ALE of MPC')
     #save figure
-    plt.savefig(fig_out/'ALE'/outcome/figname)
+    plt.savefig(fig_out/'ALE'/outcome/figname,
+                facecolor='white')
     fig.clf()
     plt.close()
+
+def all_ale_plots_single(spec, model, bins=20,         
+                bootstrap=False,
+                bootstrap_samples=1000, n_sample=500, alpha=0.05, cut=1, 
+                figname='ALE'): 
+    '''
+    Get single-feature ALE plots of predictor for all features in training set and save them in one figure.
+    '''
+    train_set=spec.x_test
+    features=train_set.columns
+    predictor=spec.selectmodel(model=model)
+    #set up figure
+    #fig, axes=subplots_canvas(features)
+    #n_rows, n_cols=fig_geom(fig)
+    #then for each feature
+    for i, feat in enumerate(features): 
+        print(feat)
+    #!this is ugly so far
+        if feat in ['married', 'owned_m', 'notowned']: 
+            pass
+        else:
+            #set up figure 
+            fig, ax=plt.subplots()
+            #get ALE, quantiles and CIs
+            quants, ale, ci_low, ci_up, _=ale_dml.ale_bootstrap(predictor=predictor, train_set=train_set, feature=feat, bins=bins, bootstrap=bootstrap, bootstrap_samples=bootstrap_samples, n_sample=n_sample, alpha=alpha, cut=cut)
+            #then create axes
+            '''
+            #get iˆth axis if n_col>1
+            if n_cols>1: 
+                ax=axes[i]
+            else: 
+                ax=axes
+            '''
+            #if bins are actually not existent, then its not possible to create the plot
+            if (quants is None): 
+                pass
+            else:
+                #plot 
+                lines=[ci_low, ale, ci_up]
+                labels=['lower CI', 'ALE', 'upper CI']
+                colors=['crimson', 'forestgreen', 'crimson']
+                for y, lab, col in zip(lines, labels, colors):
+                    ax.plot(ale_dml._get_centres(quants), y, label=lab, color=col)
+                    #ax.set_title(feat)
+                #save figure
+                plt.savefig(fig_out/'ALE'/outcome/f'{spec}_{model}_{feat}', 
+                            figname,
+                            facecolor='white')
+                print(f'{feat} end')
+                #set global legend, title and y_axis
+                fig.clf()
+                plt.close()
 
 def do_analysis(spec, specname): 
     '''
@@ -389,6 +442,7 @@ for out in outcomes:
     print(f'{out} start!')
     #set for all specifications
     #choose treatment
+    out='chNDexp'
     treatment='RBTAMT'
     #choose outcome 
     outcome=out
@@ -415,8 +469,8 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    # spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    # #get coefficients of interaction terms in linear model
+    spec1_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    #get coefficients of interaction terms in linear model
     # lin_inf_tex=spec1_est.linDML.summary().as_latex()
     # str_to_tex('lin_coefs_spec1.tex', lin_inf_tex)
     # #save marginal effect results in CSV 
