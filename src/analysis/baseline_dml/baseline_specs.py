@@ -15,8 +15,8 @@ wd=Path.cwd()
 sys.path.append(str(wd.parent))
 from utils import data_utils
 from utils import fitDML
-from ALEPython.src.alepython import ale_dml
 #import ALEPython.src.alepython as ale_dml
+from ALEPython.src.alepython import ale_dml
 
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'
@@ -337,12 +337,12 @@ def all_ale_plots(spec, model, bins=20,
     fig.clf()
     plt.close()
 
-def all_ale_plots_single(spec, model, bins=20,         
+def all_ale_plots_single(spec, model, specname,
+                bins=20,         
                 bootstrap=False,
-                bootstrap_samples=1000, n_sample=500, alpha=0.05, cut=1, 
-                figname='ALE'): 
+                bootstrap_samples=1000, n_sample=500, alpha=0.05, cut=1): 
     '''
-    Get single-feature ALE plots of predictor for all features in training set and save them in one figure.
+    Get single-feature ALE plots of predictor for all features in training set and save them in single figures.
     '''
     train_set=spec.x_test
     features=train_set.columns
@@ -380,32 +380,31 @@ def all_ale_plots_single(spec, model, bins=20,
                 for y, lab, col in zip(lines, labels, colors):
                     ax.plot(ale_dml._get_centres(quants), y, label=lab, color=col)
                     #ax.set_title(feat)
-                #save figure
-                plt.savefig(fig_out/'ALE'/outcome/f'{spec}_{model}_{feat}', 
-                            figname,
-                            facecolor='white')
-                print(f'{feat} end')
                 #set global legend, title and y_axis
-                fig.clf()
-                plt.close()
+                #ax.legend(labels, bbox_to_anchor=(1,0.5), loc='upper left')
+                #save figure
+                plt.savefig(fig_out/'ALE'/outcome/f'{specname}_{model}_{feat}',
+                            facecolor='white', 
+                            dpi=720)
+                print(f'{feat} end')
 
 def do_analysis(spec, specname): 
     '''
     Apply all analysis steps to spec. 
     '''
-    #* CDF 
-    cdf_name='cdf_'+specname
-    cdf_figure(spec=spec, models=[
-                                #'linear', 
-                                    'cf'
-                                ],          
-                figname=cdf_name)
-    print('CDF done')
+    # #* CDF 
+    # cdf_name='cdf_'+specname
+    # cdf_figure(spec=spec, models=[
+    #                             #'linear', 
+    #                                 'cf'
+    #                             ],          
+    #             figname=cdf_name)
+    # print('CDF done')
     #* ALE 
     #linear
-    #all_ale_plots(spec, model='linear', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_linear')
+    all_ale_plots_single(spec, model='linear', specname=specname, bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0])
     #cf
-    all_ale_plots(spec, model='cf', bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0], figname=specname+'_cf')
+    all_ale_plots_single(spec, model='cf', specname=specname, bins=20, bootstrap=True, bootstrap_samples=100, n_sample=spec.x_test.shape[0])
     print('ALE done')
 
 #*#########################
@@ -442,10 +441,9 @@ for out in outcomes:
     print(f'{out} start!')
     #set for all specifications
     #choose treatment
-    out='chNDexp'
     treatment='RBTAMT'
     #choose outcome 
-    outcome=out
+    outcome='chNDexp'
     #set how many folds are done in second stage 
     folds=5
     #*#########################
@@ -482,10 +480,10 @@ for out in outcomes:
     #fit causal forest model
     spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     #save marginal effect results in CSV 
-    spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
-    #save ATE results in latex table 
-    tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec1_cf_ate.tex', tex_str)
+    # spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
+    # #save ATE results in latex table 
+    # tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec1_cf_ate.tex', tex_str)
     print('Spec 1 done')
 
     #*#########################
@@ -508,7 +506,7 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    # spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec2_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     # #get coefficients of interaction terms in linear model
     # lin_inf_tex=spec2_est.linDML.summary().as_latex()
     # str_to_tex('lin_coefs_spec2.tex', lin_inf_tex)
@@ -519,9 +517,9 @@ for out in outcomes:
     # #* Estimation: Causal Forest 
     #fit causal forest model
     spec2_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
-    tex_str=spec2_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec2_cf_ate.tex', tex_str)
+    # spec2_est.cf_cate_df.to_csv(results/outcome/'cate_spec2_cf.csv')
+    # tex_str=spec2_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec2_cf_ate.tex', tex_str)
 
     print('Spec 2 done')
 
@@ -545,7 +543,7 @@ for out in outcomes:
 
     #* Estimation: Linear
     #fit linear model 
-    # spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    spec3_est.fit_linear(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     # #get coefficients of interaction terms in linear model
     # lin_inf_tex=spec3_est.linDML.summary().as_latex()
     # str_to_tex('lin_coefs_spec3.tex', lin_inf_tex)
@@ -553,32 +551,32 @@ for out in outcomes:
     # spec3_est.lin_cate_df.to_csv(results/outcome/'cate_spec3_lin.csv')
     # tex_str=spec3_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec3_lin_ate.tex', tex_str)
-    # #* Estimation: Causal Forest 
+    #* Estimation: Causal Forest 
     #fit cf model 
     spec3_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
-    tex_str=spec3_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec3_cf_ate.tex', tex_str)
+    # spec3_est.cf_cate_df.to_csv(results/outcome/'cate_spec3_cf.csv')
+    # tex_str=spec3_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec3_cf_ate.tex', tex_str)
 
     print('Spec 3 done')
 
-    #*#########################
-    #! Specification 4: All financial variables
-    #*#########################
-    #spec 4 uses all financial variables (smallest sample available)
-    #* Setup
-    #choose x_cols 
-    spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
-    spec4_wcols=spec3_wcols
-    #only keep relevant variables 
-    subset=variables[variables['comp_samp']==1]
-    spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+spec4_wcols+constants]
-    spec4_df=spec4_df.dropna()
-    #set up DML class
-    spec4_est=fitDML(spec4_df, treatment, outcome, spec4_xcols)
-    #get opt parameters for first stage for setting
-    best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec4')
-    print('Spec 4 is set up.')
+    # #*#########################
+    # #! Specification 4: All financial variables
+    # #*#########################
+    # #spec 4 uses all financial variables (smallest sample available)
+    # #* Setup
+    # #choose x_cols 
+    # spec4_xcols=spec3_xcols+['ORGMRTX', 'owned_m', 'notowned', 'QBLNCM1X']
+    # spec4_wcols=spec3_wcols
+    # #only keep relevant variables 
+    # subset=variables[variables['comp_samp']==1]
+    # spec4_df=subset[['custid']+[treatment, outcome]+spec4_xcols+spec4_wcols+constants]
+    # spec4_df=spec4_df.dropna()
+    # #set up DML class
+    # spec4_est=fitDML(spec4_df, treatment, outcome, spec4_xcols)
+    # #get opt parameters for first stage for setting
+    # best_params_R, best_params_Y=retrieve_params(hyperparams, treatment, outcome, 'spec4')
+    # print('Spec 4 is set up.')
 
     #* Estimation: Linear
     #fit linear model 
@@ -590,14 +588,14 @@ for out in outcomes:
     # spec4_est.lin_cate_df.to_csv(results/outcome/'cate_spec4_lin.csv')
     # tex_str=spec4_est.lin_ate_inf.summary().as_latex()
     # str_to_tex('spec4_lin_ate.tex', tex_str)
-    # #* Estimation: Causal Forest 
+    #* Estimation: Causal Forest 
     #fit cf model 
-    spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
-    spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
-    tex_str=spec4_est.cf_ate_inf.summary().as_latex()
-    str_to_tex('spec4_cf_ate.tex', tex_str)
+    # spec4_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
+    # spec4_est.cf_cate_df.to_csv(results/outcome/'cate_spec4_cf.csv')
+    # tex_str=spec4_est.cf_ate_inf.summary().as_latex()
+    # str_to_tex('spec4_cf_ate.tex', tex_str)
 
-    print('Spec 4 done')
+    # print('Spec 4 done')
 
     #*#########################
     #! ANALYSIS
@@ -619,8 +617,8 @@ for out in outcomes:
     do_analysis(spec3_est, 'spec3')
     print('Spec 3 done')
     #*#########
-    #! Spec 4 
-    print('Start Spec 4')
-    do_analysis(spec4_est, 'spec4')
-    print('Spec 4 done')
+    # #! Spec 4 
+    # print('Start Spec 4')
+    # do_analysis(spec4_est, 'spec4')
+    # print('Spec 4 done')
     print(f'{out} end!')
