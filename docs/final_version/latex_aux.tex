@@ -15,6 +15,7 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{caption}
+\usepackage{subcaption}
 \usepackage[normalem]{ulem}
 %%%%%%%%%
 %Options and self-defined commands
@@ -23,3 +24,6 @@
 \onehalfspacing
 %for notes on tables and figures
 \newcommand\fnote[1]{\captionsetup{font=footnotesize, width=.9\linewidth}\caption*{#1}}
+
+%set font size of subfigure captions 
+\captionsetup[subfigure]{labelfont=smaller, textfont=smaller}
