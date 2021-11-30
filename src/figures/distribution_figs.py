@@ -173,7 +173,7 @@ def distribution_fig(variable):
     files.sort()
     for file in files:
         #create figure
-        fig, ax=plt.subplots(figsize=[20, 15])
+        fig, ax=plt.subplots(figsize=[40, 30])
         #data prep
         df, bins, labels=prep_data(variable, file)
         #get shares 
@@ -184,12 +184,12 @@ def distribution_fig(variable):
                 color='teal' , edgecolor='black', 
                 width=1, 
                 align='edge', 
-                linewidth=0.2, alpha=0.5)
+                linewidth=0.4, alpha=0.5)
         #add bars of significance shares 
         ax.bar(labels[:-1], sig_shares, 
                 color='crimson', edgecolor='black',
                 width=1, align='edge', 
-                linewidth=0.2, 
+                linewidth=0.4, 
                 alpha=0.8)
         #add ATE as vertical dashed line 
         #retrieve ATE values
@@ -198,7 +198,7 @@ def distribution_fig(variable):
         ate_pos=get_ate_xpos(ate, bins, labels)
         ax.axvline(ate_pos, 
                     linestyle='--', 
-                    linewidth=2, 
+                    linewidth=4, 
                     color='black')
         #*axis customization
         #set x ticks and label them accordingly
@@ -208,8 +208,9 @@ def distribution_fig(variable):
         #set xtick labels and rotate them 
         ax.set_xticklabels(xticklabels, 
                             rotation=45, 
-                            fontsize=20)
-        ax.tick_params(axis='y', labelsize=20)
+                            fontsize=45)
+        ax.tick_params(axis='y', labelsize=45, 
+                        pad=20)
         #set extra tick at ATE value 
         #set y axis lim 
         ax.set_ylim((0, max(shares)+0.01))
@@ -217,10 +218,10 @@ def distribution_fig(variable):
         #no title - use subfigure caption
         #ax.set_title(get_title(file))
         #x-axis label
-        ax.set_xlabel('MPC', fontsize=25, 
-                        labelpad=5)
-        ax.set_ylabel('Frequency', fontsize=25, 
-                        labelpad=5)
+        ax.set_xlabel('MPC', fontsize=55, 
+                        labelpad=50)
+        ax.set_ylabel('Frequency', fontsize=55, 
+                        labelpad=50)
         #x-axis label
         #set global title
         #no title - use Latex caption
