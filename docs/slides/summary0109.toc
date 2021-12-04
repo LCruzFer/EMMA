@@ -1,2 +1,0 @@
-\beamer@sectionintoc {1}{Approach}{3}{0}{1}
-\beamer@sectionintoc {2}{Problems, Ideas, Questions}{7}{0}{2}
