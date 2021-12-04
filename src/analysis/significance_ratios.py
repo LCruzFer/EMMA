@@ -30,9 +30,12 @@ def ratios_variable(variable, alpha):
     #get list of result dfs
     files=os.listdir(results/variable)
     files.sort()
+    if '.DS_Store' in files: 
+        files.remove('.DS_Store')
     #save them in dictionary that is then turned into pandas df
     ratio_dict={}
-    for file in files: 
+    for file in files:
+        print(file)
         df=pd.read_csv(results/variable/file)
         ratio=get_ratio(df, alpha=alpha)
         #ugly but gets a nice way of naming for dictionary
@@ -48,6 +51,7 @@ def get_all_ratios(variables, alpha):
     indices=['spec1_cf', 'spec1_lin', 'spec2_cf', 'spec2_lin', 'spec3_cf', 'spec3_lin', 'spec4_cf', 'spec4_lin']
     final_df=pd.DataFrame(index=indices)
     for var in variables:
+        print(var)
         df_var=ratios_variable(var, alpha)
         df_var=df_var.rename(columns={0: var})
         #merge onto final_df
@@ -62,7 +66,7 @@ def str_to_tex(file, tex_str):
 #*#########################
 #! DATA
 #*#########################
-variables=['chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp',]
+variables=['chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp']
 #get ratios for alpha=0.1
 ratios_10pct=get_all_ratios(variables, alpha=0.1)
 filename='ratios_10pct.tex'
