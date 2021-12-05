@@ -430,8 +430,8 @@ constants=['const'+str(i) for i in range(1, 15)]
 #list of outcome variables
 outcomes=[
         'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
-        'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp', 
-        'chCARTKUexp',
+        # 'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp', 
+        # 'chCARTKUexp',
         #'chUTILexp', 'chVEHINSexp', 'chENTERTexp', 
         #'chVEHFINexp',
         ]
@@ -443,7 +443,7 @@ for out in outcomes:
     #choose treatment
     treatment='RBTAMT'
     #choose outcome 
-    outcome='chNDexp'
+    outcome=out
     #set how many folds are done in second stage 
     folds=5
     #*#########################
