@@ -2,6 +2,7 @@
 %Packages
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{natbib}
 \usepackage{graphicx}
 \usepackage{threeparttable}
@@ -19,15 +20,20 @@
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{threeparttable}
+\usepackage{pifont}
 \usepackage[normalem]{ulem}
 %%%%%%%%%
 %Options and self-defined commands
 \DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 \geometry{a4paper, left = 25mm, right = 25mm, top = 20mm}
 \onehalfspacing
-%for notes on tables and figures
-\newcommand\fnote[1]{\captionsetup{font=footnotesize, width=.9\linewidth}\caption*{#1}}
 
+%for notes on tables and figures
+\newcommand\fnote[1]{\captionsetup{font=footnotesize, width=.8\textwidth}\caption*{#1}}
 %set font size of subfigure captions 
 \captionsetup[subfigure]{labelfont=smaller, textfont=smaller}
 
+
+%checkmark and X mark 
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%

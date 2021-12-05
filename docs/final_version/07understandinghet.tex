@@ -36,9 +36,74 @@ Note that we yet cannot say something meaningful about the statistical significa
 
 \subsection{Results} 
 To investigate what role single features play in the MPC we mainly focus on the response with respect to changes in non-durable consumption. We will briefly draw comparisons to other consumption categories where we gain important insights from doing so. Moreover, we only discuss the features relevant within the context of the literature. As we will see these are proving to be drivers of the MPC as expected. The ALE figures for all specification-estimator pairs of each of the main consumption categories are presented in Appendix A.A. As pointed out in Section 6.1, by the construction of the estimator and the ALE, it will always depict a linear relationship when looking at the linear DML setting. However, we can still infer in what direction the relationship is going - e.g., whether predictions are above or below average for young people. More importantly, it is useful as a benchmark to compare the ALE of our estimates using the causal forest as the second stage estimator. \\
+\begin{figure}[t]
+    \centering
+%    \mbox{}\hfill
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec1_linear_AGE.png}
+        \caption{Spec 1 - linear}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec1_cf_AGE.png}
+        \caption{Spec 1 - causal forest}
+    \end{subfigure}
+
+    % \begin{subfigure}{0.33\linewidth}
+    %     \includegraphics[width=\linewidth]{figures/ALE/chNDexp/spec2_linear_AGE.png}
+    %     \caption{Spec 2 - linear}
+    % \end{subfigure}\hfill
+    % \begin{subfigure}{0.33\linewidth}
+    %     \includegraphics[width=\linewidth]{figures/distributions/spec2_cf_chTOTexp.png}
+    %     \caption{Spec 2 - causal forest }
+    % \end{subfigure}\hfill
+    
+    \begin{subfigure}{0.5\linewidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec3_linear_AGE.png}
+        \caption{Spec 3 - linear}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\linewidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec1_cf_AGE.png}
+        \caption{Spec 3 - causal forest}
+    \end{subfigure}
+    \caption{ALE of Age - non-durable expenditures}
+\end{figure}
 Comparing the ALE of the causal forest estimator to the linear model helps us understand where non-linearities play an important role in understanding MPC heterogeneity. Still, we have established in Section 5.3 that the causal forest estimator reveals more significant MPCs in specification 3, where we control for liquidity, which is likely to occur because of nonlinearities not picked up in the linear CATE model. This notion becomes evident right away when we compare the ALE of the linear CATE and the non-linear CATE we retrieve with the causal forest estimator. The clear positive relationship between age and MPC we find in the linear estimator immediately breaks down in the causal forest based model. Instead, we see a rather unstable relationship with wider pseudo confidence bands. Younger and middle-aged households (45 to 55) seem to be experiencing lower MPCs than older households. However, only for very narrow settings do our bootstrapped CIs completely lie below zero. This signals a very unstable relationship between age and the MPC overall, which is a strong contrast to the linear DML results. These dynamics are observed throughout all consumption categories. \\
 Interestingly, the role of age in the linear model is reversed once we introduce liquid assets, salary and income in specification 3 (Figure X.X Panel B). The deviations decrease substantiallyand the ALE shows that older households seem to have a lower MPC. Given the correlation between age and each of these variables this underlines their importance since age seems to act as a proxy for them. This bias vanishes by including the \textit{financial status} variables. This dynamic is also upheld in the causal forest estimator, where we see that the effect of age to be more stable and more closely fluctuating around zero. It supports the notion that younger households show a stronger response to the income shock. \\
 The main channel identified in the literature is liquidity. Our discussion of the underlying theory of binding borrowing constraints and lacking access to liquid assets provides the intuition for the following analysis. Note that the pattern described here is also present across all consumption categories although the ALE magnitude is varying. The picture painted by the liquidity channel is only in part supported by our results. First, the linear estimator shows a negative relationship between MPC and liquidity only for changes in total consumption. When we turn to non-durables and strictly non-durables, the ALE actually suggests that households with higher liquidity show a stronger positive reaction to the income shock. While these effects are very small, this still suggests that the liquidity channel does not necessarily act as expected in creating MPC heterogeneity. One possible explanation is that for high liquidity households the tax rebate represents a relatively small income shock. Therefore, they do not depend on it financially, are less informed and are taken more by surprise. However, this phenomenon is quickly turned around by the causal forest results. It fully supports the liquidity channel as we find that low liqudity leads to a high MPC, while once a certain threshold in liquid asset holdings is exceeded the MPC is decreased. Hence, the liquidity channel in cases of anticipated income shocks such as the tax rebate is underlined by the causal forest results. Low liquidity households are not able to react at the announcement to the shock and thus show a strong reaction once the tex rebate is received. On the other hand, a higher level of liquidity enables households to increase consumption prior to receiving the rebate and smooth consumption level overall. \\
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec3_linear_liqassii.png}
+        \caption{Spec 3 - linear}
+    \end{subfigure}%
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec3_cf_liqassii.png}
+        \caption{Spec 3 - causal forest}
+    \end{subfigure}
+    \caption{ALE of liquid assets - non-durable expenditures}
+\end{figure}
 Interestingly, the causal forest reveals that at the very bottom of the liquidity distribution, households show a negative response to rebate receipt. These negative responses might explain why the linear DML shows no role of liquidity at low levels of liquidity as it does not fully capture non-linearities and interactions, leaving the estimator biased. On the other hand, they are contrary to the main idea of the liquidity channel. This result shows that the clear relationship the liquidity channel paints in theory does not hold up in the data. Instead, the negative effect of very low levels of liquidity on the predicted MPC highlights a new role. A possible explanation might again be related to the circumstances under which the stimulus is received. Households with no liquidity might save up the stimulus to build up a buffer during the times of economic downturn as were taking place in 2008. \\
 \textbf{here tran-sition missing} The sharp drop after roughly 2,000 USD suggests that households that were capable of increasing their consumption at announcement by tapping into their liquid assets consequently have a lower MPC out of the rebate as they save it to further smooth consumption by saving it. The drift to a positive role of liquidity once households have high liquid asset holdings is very unstable as evidenced by the very wide CIs that also include negative values and zero across all levels of liquidity. Most likely, this is due to the small amount of households in our sample that report such high levels of liquidity leaving the causal forest performing imprecisely. \\
-Lastly, we turn to the other two financial variables, salary and income, which are presented in Figure X.X. In both we see highly non-linear dynamics that appear to be quite similar once a threshold of 50,000 USD is passed. We see that a very low salary leads to a lower MPC, which is reasonable to expect considering the economic circumstances in which the tax rebate took place. Low income households struggling during the recession might show a smaller response because they use the tax rebate for precautionary savings (maybe a citation here of a precautionary savings paper). On the other hand, the MPC is higher for households that have higher salaries in range between 50,000 and 75,000 USD before the effect vanishes at higher levels. This is also in line with what we expect as the tax rebate was phased out at reported incomes above 75,000 USD. Thus, high income households for which the tax rebate plays a minor role in their income anyway also received even less. 
+\begin{figure}[t]
+    \centering
+%    \mbox{}\hfill
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\linewidth]{figures/ALE/chNDexp/spec3_linear_FSALARYM.png}
+        \caption{Salary - linear}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\linewidth]{figures/ALE/chNDexp/spec3_cf_FSALARYM.png}
+        \caption{Salary - causal forest}
+    \end{subfigure}\hfill
+
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec3_linear_FINCBTXM.png}
+        \caption{Income - linear}
+    \end{subfigure}\hfill
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/ALE/chNDexp/spec3_cf_FINCBTXM.png}
+        \caption{Income - causal forest}
+    \end{subfigure}\hfill
+    \caption{ALE of salary and income - non-durable expenditures}
+\end{figure}
+Lastly, we turn to the other two financial variables, salary and income, which are presented in Figure X.X. In both we see highly non-linear dynamics that appear to be quite similar once a threshold of 50,000 USD is passed. We see that a very low salary leads to a lower MPC, which is reasonable to expect considering the economic circumstances in which the tax rebate took place. Low income households struggling during the recession might show a smaller response because they use the tax rebate for precautionary savings. On the other hand, the MPC is higher for households that have higher salaries in range between 50,000 and 75,000 USD before the effect vanishes at higher levels. This is also in line with what we expect as the tax rebate was phased out at reported incomes above 75,000 USD. Thus, high income households for which the tax rebate plays a minor role in their income anyway received even less. 

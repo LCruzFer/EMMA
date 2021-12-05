@@ -1,13 +1,28 @@
-\begin{table}[t]
-\begin{threeparttable}
-\begin{tabular}{l c c}
-\toprule 
-Specification & $X_{it}$ & $W_{it}$ \\ 
-1 & Age, change in family size & \\
-2 & & \\ 
-3 & & \\  
-\end{tabular}
-\end{threeparttable}
-\caption{Specifications}
-\label{tab:specs}
+\begin{table}[t!]
+    \centering
+    \begin{threeparttable}
+        \begin{tabular*}{.8\textwidth}{l @{\extracolsep{\fill}} c c c}
+            \toprule 
+            Variable & $1$ & $2$ & $3$ \\ 
+            \midrule
+            \vspace{5pt}
+            Age & \cmark & \cmark & \cmark \\
+            \vspace{5pt}
+            $\Delta$Family Size & \cmark & \cmark & \cmark \\ 
+            \vspace{5pt}
+            Married & \xmark & \cmark & \cmark \\  
+            \vspace{5pt}
+            Liquid Assets & \xmark & \xmark & \cmark \\
+            \vspace{5pt}
+            Salary & \xmark & \xmark & \cmark \\
+            \vspace{5pt}
+            Income & \xmark & \xmark & \cmark \\
+            \midrule
+            N & 17,xxx & 17,xxx & 9,xxx \\
+            \bottomrule
+        \end{tabular*}
+        \fnote{Specifications are build upon each other, i.e. specification $s+1$ contains all variables from specification $s$ plus the ones mentioned here. $W_{it}$ containts change in family size squared and age squared throughout all specifications - motivated by specification 1 to mimic \cite{parkeretal_2013} and \cite{misrasurico_2014}.}
+    \end{threeparttable}
+    \caption{Specifications}
+    \label{tab:specs}
 \end{table}
