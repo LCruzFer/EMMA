@@ -17,6 +17,40 @@ results=wd.parents[1]/'data'/'results_new'
 #*#########################
 #! FUNCTIONS
 #*#########################
+def set_size(width, fraction=1):
+    """Set figure dimensions to avoid scaling in LaTeX.
+
+    Parameters
+    ----------
+    width: float
+            Document textwidth or columnwidth in pts
+    fraction: float, optional
+            Fraction of the width which you wish the figure to occupy
+
+    Returns
+    -------
+    fig_dim: tuple
+            Dimensions of figure in inches
+    """
+    # Width of figure (in pts)
+    fig_width_pt = width * fraction
+
+    # Convert from pt to inches
+    inches_per_pt = 1 / 72.27
+
+    # Golden ratio to set aesthetic figure height
+    # https://disq.us/p/2940ij3
+    golden_ratio = (5**.5 - 1) / 2
+
+    # Figure width in inches
+    fig_width_in = fig_width_pt * inches_per_pt
+    # Figure height in inches
+    fig_height_in = fig_width_in * golden_ratio
+
+    fig_dim = (fig_width_in, fig_height_in)
+
+    return fig_dim
+
 def get_min_max(x):
     minimum=np.min(x)
     minimum=np.divide(np.floor(minimum*10), 10)
@@ -106,7 +140,7 @@ def all_distributions_fig(variable):
     files=[file for file in files if '.csv' in file]
     files.sort()
     #set up figure 
-    fig, axes=plt.subplots(nrows=4, ncols=2, figsize=[20, 15])
+    fig, axes=plt.subplots(nrows=2, ncols=3, figsize=[20, 15])
     #flatten axes into 1d array for easier looping
     axes=axes.flatten()
     for ax, file in zip(axes, files):
@@ -161,7 +195,7 @@ def all_distributions_fig(variable):
     plt.savefig(fig_out/'distributions'/variable,
                 facecolor='white')
 
-def distribution_fig(variable):
+def distribution_fig(variable, fig_dim):
     '''
     Create single plots and save them for each estimator-specification pair.
     
@@ -173,7 +207,9 @@ def distribution_fig(variable):
     files.sort()
     for file in files:
         #create figure
-        fig, ax=plt.subplots(figsize=[40, 30])
+        fig, ax=plt.subplots(1, 1,
+                            #figsize=(40, 30)
+                            )
         #data prep
         df, bins, labels=prep_data(variable, file)
         #get shares 
@@ -198,7 +234,7 @@ def distribution_fig(variable):
         ate_pos=get_ate_xpos(ate, bins, labels)
         ax.axvline(ate_pos, 
                     linestyle='--', 
-                    linewidth=4, 
+                    linewidth=1, 
                     color='black')
         #*axis customization
         #set x ticks and label them accordingly
@@ -208,9 +244,12 @@ def distribution_fig(variable):
         #set xtick labels and rotate them 
         ax.set_xticklabels(xticklabels, 
                             rotation=45, 
-                            fontsize=45)
-        ax.tick_params(axis='y', labelsize=45, 
-                        pad=20)
+                            #fontsize=8
+                            )
+        ax.tick_params(axis='y', 
+                        #labelsize=8, 
+                        #pad=20
+                        )
         #set extra tick at ATE value 
         #set y axis lim 
         ax.set_ylim((0, max(shares)+0.01))
@@ -218,37 +257,61 @@ def distribution_fig(variable):
         #no title - use subfigure caption
         #ax.set_title(get_title(file))
         #x-axis label
-        ax.set_xlabel('MPC', fontsize=55, 
-                        labelpad=50)
-        ax.set_ylabel('Frequency', fontsize=55, 
-                        labelpad=50)
+        ax.set_xlabel('MPC', 
+                        #fontsize=10, 
+                        #labelpad=50
+                        )
+        ax.set_ylabel('Frequency', 
+                        #fontsize=10, 
+                        #labelpad=10
+                        )
         #x-axis label
         #set global title
         #no title - use Latex caption
         #fig.suptitle(f'Empirical Distribution of MPC with respect to {variable}')
         #distance between subplots#
-        fig.subplots_adjust(wspace=0.2, hspace=0.6)
+        #fig.subplots_adjust(wspace=0.2, hspace=0.6)
         #save figure by getting filename and dropping 'cate_'
         filename=split_filename(file)+'_'+variable
         plt.savefig(fig_out/
                     'distributions_single'/filename,
-                    facecolor='white')
+                    facecolor='white', 
+                    bbox_inches='tight', 
+        dpi=1000)           
+        #plt.show()
         plt.close()
 
 #*#########################
 #! Create Figures
 #*#########################
 outcomes=[
-        'chTOTexp', 'chNDexp', 'chSNDexp', 'chFDexp', 
-        'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp',
-        'chUTILexp', 'chVEHINSexp', 'chENTERTexp'
+        #'chTOTexp', 
+        'chNDexp', 'chSNDexp', 'chFDexp', 
+        # 'chCARTKNexp', 'chPUBTRAexp', 'chAPPARexp', 'chHEALTHexp',
+        # 'chUTILexp', 'chVEHINSexp', 'chENTERTexp'
         #! missing but not that relevant
         #'chVEHFINexp', 'chCARTKUexp', 
         ]
-'''
-for out in outcomes: 
-    distribution_fig(out)
-'''
+tex_fonts = {
+    # Use LaTeX to write all text
+    "text.usetex": True,
+    "font.family": "serif",
+    # Use 10pt font in plots, to match 10pt font in document
+    "axes.labelsize": 24,
+    "font.size": 14,
+    # Make the legend/label fonts a little smaller
+    "legend.fontsize": 10,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 16
+}
+
+plt.rcParams.update(tex_fonts)
+#set textwidth of latex document
+latex_width=455
+#set fraction to how much of textiwdth in latex the figure should be
+figdim_fraction=0.5
+#get figure dimensions 
+figdim=set_size(width=latex_width, fraction=figdim_fraction)
 
 for out in outcomes: 
-    distribution_fig(out)
+    distribution_fig(out, fig_dim=figdim)

@@ -443,7 +443,7 @@ for out in outcomes:
     #choose treatment
     treatment='RBTAMT'
     #choose outcome 
-    outcome=out
+    outcome='chTOTexp'
     #set how many folds are done in second stage 
     folds=5
     #*#########################
@@ -474,16 +474,18 @@ for out in outcomes:
     # #save marginal effect results in CSV 
     # spec1_est.lin_cate_df.to_csv(results/outcome/'cate_spec1_lin.csv')
     # #save ATE results in latex table 
-    # tex_str=spec1_est.lin_ate_inf.summary().as_latex()
-    # str_to_tex('spec1_lin_ate.tex', tex_str)   
+    print(spec1_est.lin_ate_inf.summary())
+    tex_str=spec1_est.lin_ate_inf.summary().as_latex()
+    str_to_tex('spec1_lin_ate.tex', tex_str)   
     #* Estimation: Causal Forest 
     #fit causal forest model
     spec1_est.fit_cfDML(params_Y=best_params_Y, params_T=best_params_R, folds=folds)
     #save marginal effect results in CSV 
     # spec1_est.cf_cate_df.to_csv(results/outcome/'cate_spec1_cf.csv')
     # #save ATE results in latex table 
-    # tex_str=spec1_est.cf_ate_inf.summary().as_latex()
-    # str_to_tex('spec1_cf_ate.tex', tex_str)
+    print(spec1_est.cf_ate_inf.summary())
+    tex_str=spec1_est.cf_ate_inf.summary().as_latex()
+    str_to_tex('spec1_cf_ate.tex', tex_str)
     print('Spec 1 done')
 
     #*#########################
