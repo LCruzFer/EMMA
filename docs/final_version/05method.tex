@@ -19,13 +19,13 @@ where $Y_d$ is the outcome when treatment is $D=d$. In our setting, where treatm
 \end{align*}
 The marginal CATE measures how much a marginal increase in the continuous treatment changes the outcome for individuals that have a set of characteristics $X=x$. Note that in our setting, we assume that the CATE is linear in treatment, i.e., the treatment effect is independent of the size of the treatment. The task is now to find an appropriate estimator ${\theta}(X_{it})$.
 
-\subsection{Regularization bias and how to get rid of it - alternative title: A quest to avoid biases}
+\subsection{Regularization Bias - and how to get rid of it}
 As \cite{DML2017} point out, we could come up with some seemingly straightforward approach to estimate the PLM using machine learning methods. For example, approximating the function $g(X, W)$ with a high polynomial and using a Lasso regression for regularization or using a combination of random forests for predicting $g(X, W)$ and then an OLS regression to find $\theta(X)$. However, any machine learning-based approach that follows this notion will suffer from a bias. To avoid overfitting and the resulting large variance of the estimator, machine learning methods deliberately induce a bias into their predictions. This bias does not vanish asymptotically, leading to inconsistent results.\footnote{See Section 1.1 of \cite{DML2017}.} However, we can deal with this regularization bias. For this, we define 
 \begin{align}
     E[Y_{it}|X_{it}, W_{it}] &\equiv f(X_{it}, W_{it}) \label{eq:EY_def}\\ 
     E[D_{it}|X_{it}, W_{it}] &\equiv h(X_{it}, W_{it}) \label{eq:ED_def}
 \end{align}
-where (\ref{eq:ED_def}) follows from (\ref{eq:plm2}). It is straightforward to estimate these conditional means using any machine learning method of choice, which is the first stage of the DML framework. Using (\ref{eq:EY_def}), (\ref{eq:ED_def}) and the PLM defined above, we can find\footnote{Derivations are shown in Appendix A.A.}
+where (\ref{eq:ED_def}) follows from (\ref{eq:plm2}). It is straightforward to estimate these conditional means using any machine learning method of choice, which is the first stage of the DML framework. Using (\ref{eq:EY_def}), (\ref{eq:ED_def}) and the PLM defined above, we can find\footnote{Derivations are shown in Appendix \ref{app:plm_deriv}}
 \begin{align}
     Y_{it}-f(X_{it}, W_{it})=\theta(X_{it})(D_{it}-h(X_{it}, W_{it})) + \epsilon_{it}. \label{eq:maineq_ortho}
 \end{align}
@@ -54,8 +54,6 @@ To identify nonlinearities in the CATE, we use a nonparametric approach that all
 \end{align}
 where we choose the CATE $\theta(X)$ and constants $\beta(x)$ to solve it. The causal forest non-parametrically estimates $\theta(X)$ and therefore puts no assumption on the form of the mapping $\phi(X)$. The term $(\tilde{D}_{it}; 1)$ represents a matrix consisting of the vector of orthogonalized treatments and ones to capture the constant effects. \\
 As part of our analysis we will compare the results to check whether the relationship is indeed linear or whether we discover non-linear heterogeneities that the linear DML approach does not account for and have not been considered in the literature yet. However, note that when using a nonparametric second stage the convergence rate of the estimator declines. This implies that the Causal Forest based approach is more demanding when it comes to the number of observations. 
-
-\textbf{This has to look better and be more 'algorithmic'.}
 \begin{algorithm} 
     \caption{Double Machine Learning Estimator}
     \label{alg:alg1}

@@ -15,10 +15,10 @@ Parker et al. identify a potential source of bias in this identification approac
 The stimulus excluding the child bonuses equals the household's net income tax liability (NTL; in the following, also referred to as the net tax liability) as long as it is within the exogenously defined boundaries we discussed in Section \ref{subsec:stimulus_desc}. Parker et al. argue that the NTL might also drive changes in consumption, rendering the treatment endogenous. Their solution is to instrument the amount received with a dummy variable that only signals whether the stimulus was received or not in the given quarter. While their results and the authors themselves suggest that this is not much of a concern, we decisively disagree with their identification approach in general. \\
 Parker et al. do not control for any variable related to households income or salary. These variables are without a doubt directly connected to our treatment because the NTL - i.e., how much a household owes in income taxes - is a function of the household's income. Excluding these variables leads to omitted variable bias causing inconsistent estimates. However, other than through the channel of income, we deem it highly unlikely that the net tax liability itself is driving changes in consumption. It might be possible that in other years the NTL plays a role for households' income as it can be perceived as an anticipated income - or liquidity - shock.\footnote{Households usually should know that they will have to pay this/receive this because of past experience and because the NTL also depends on how much income tax was already paid during the previous year.} However, in 2008, the NTL affected households via their tax rebate, i.e., it does not affect the consumption change through other channels than what is captured by the tax rebate. Therefore, we argue in favor of using the actual rebate amount since it has two advantages: for one, we have an additional source of variation, and second, it allows us to estimate the continuous treatment effect and interpret it as the actual MPC. Moreover, this is in line with \cite{misrasurico_2014} whose results also suggest that the endogeneity of the NTL is not a concern.
 
-\subsection{Main Results}
-We analyze our results in several steps and begin by looking at the empirical distribution of the estimated MPCs. Figure X.X shows the distribution of MPCs for the four main expenditure categories considered by Parker et al.: Food (FD), Strictly Non-Durables (SND) as defined by \cite{lusardi_1996}, Non-Durables (ND), and Total (TOT) expenditure. These categories are increasing in their level of aggregation, e.g., SND includes expenditures on food. A detailed list of all sub-components of each of these categories is listed in Appendix X.X. Here, we only want to highlight that the difference between SND and ND consumption categories are so-called 'semi-durables,' such as health expenditures, which are not included in the SND category. \\
+\subsection{Main Results} \label{subsec:main_res}
+We analyze our results in several steps and begin by looking at the empirical distribution of the estimated MPCs. Figures \ref{fig:dist_tot} to \ref{fig:dist_fd} shows the distribution of MPCs for the four main expenditure categories considered by Parker et al.: Total (Tot), Non-Durables (ND), Strictly Non-Durables (SND) as defined by \cite{lusardi_1996}, and Food (FD) expenditures. These categories are decreasing in their level of aggregation, e.g., SND includes expenditures on food. A detailed list of all sub-components of each of these categories is listed in Appendix \ref{app:c_cats}. Here, we only want to highlight that the difference between SND and ND consumption categories are so-called 'semi-durables,' such as health expenditures, which are not included in the SND category. \\
 \input{tables/significance_shares}
-A single plot of the empirical distribution in Figure X.X is retrieved as follows. We slice the range between the minimum and maximum of the point estimates into 20 equidistant bins and calculate the share of estimated MPCs that fall into each bin. The x-axis signals the borders of the different bins, and the y-axis shows the respective frequency. The blue part of a bar signals the total frequency of this bin. To illustrate how many of these estimates are actually rejecting the null of a zero MPC, we calculate the share of point estimates that reject the null at the 10\% level within each bin. This is depicted by the red part of the frequency bars. I.e., a completely red bar implies that all observations within this bin are statistically significant, whereas a bar that is only red up to half of its height signalsthat this only holds for half of the point estimates within this bin. The vertical dashed line marks the average CATE - the average treatment effect across all households - as a benchmark. Each plot's description notes whether this ATE is significant or not. \\ 
+A single plot of the empirical distribution as shown below is retrieved as follows. We slice the range between the minimum and maximum of the point estimates into 20 equidistant bins and calculate the share of estimated MPCs that fall into each bin. The x-axis signals the borders of the different bins, and the y-axis shows the respective frequency. The blue part of a bar signals the total frequency of this bin. To illustrate how many of these estimates are actually rejecting the null of a zero MPC, we calculate the share of point estimates that reject the null at the 10\% level within each bin. This is depicted by the red part of the frequency bars. I.e., a completely red bar implies that all observations within this bin are statistically significant, whereas a bar that is only red up to half of its height signalsthat this only holds for half of the point estimates within this bin. The vertical dashed line marks the average CATE - the average treatment effect across all households - as a benchmark. Each plot's description notes whether this ATE is significant or not. \\ 
 \begin{figure}[t]
     \centering
 %    \mbox{}\hfill
@@ -38,17 +38,19 @@ A single plot of the empirical distribution in Figure X.X is retrieved as follow
 %    \mbox{}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec1_cf_chTOTexp.png}
-        \caption{Spec 1 - causal forest }
+        \caption{Spec 1 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec2_cf_chTOTexp.png}
-        \caption{Spec 2 - causal forest }
+        \caption{Spec 2 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec3_cf_chTOTexp.png}
         \caption{Spec 3 - causal forest}
     \end{subfigure}\hfill
-    \caption{Distributions of estimated MPC of chTOTexp}
+    \caption{Distributions of estimated MPC - total expenditures}
+    \fnote{Blue parts show frequency of point estimates in this bin, red parts show share of these being statistically significant with $p\leq0.1$. Dotted lines signal the \textit{Average Treatment Effect}, which is only significant for.../never significant.}
+    \label{fig:dist_tot}
 \end{figure}
 \begin{figure}[t]
     \centering
@@ -69,17 +71,19 @@ A single plot of the empirical distribution in Figure X.X is retrieved as follow
 %    \mbox{}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec1_cf_chNDexp.png}
-        \caption{Spec 1 - causal forest }
+        \caption{Spec 1 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec2_cf_chNDexp.png}
-        \caption{Spec 2 - causal forest }
+        \caption{Spec 2 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec3_cf_chNDexp.png}
         \caption{Spec 3 - causal forest}
     \end{subfigure}\hfill
-    \caption{Distributions of estimated MPC of chNDexp}
+    \caption{Distributions of estimated MPC - non-durable expenditures}
+    \fnote{Blue parts show frequency of point estimates in this bin, red parts show share of these being statistically significant with $p\leq0.1$. Dotted lines signal the \textit{Average Treatment Effect}, which is only significant for.../never significant.}
+    \label{fig:dist_nd}
 \end{figure}
 \begin{figure}[t]
     \centering
@@ -100,17 +104,19 @@ A single plot of the empirical distribution in Figure X.X is retrieved as follow
 %    \mbox{}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec1_cf_chSNDexp.png}
-        \caption{Spec 1 - causal forest }
+        \caption{Spec 1 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec2_cf_chSNDexp.png}
-        \caption{Spec 2 - causal forest }
+        \caption{Spec 2 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec3_cf_chSNDexp.png}
         \caption{Spec 3 - causal forest}
     \end{subfigure}\hfill
-    \caption{Distributions of estimated MPC of chSNDexp}
+    \caption{Distributions of estimated MPC - strictly non-durable expenditures}
+    \fnote{Blue parts show frequency of point estimates in this bin, red parts show share of these being statistically significant with $p\leq0.1$. Dotted lines signal the \textit{Average Treatment Effect}, which is only significant for.../never significant.}
+    \label{fig:dist_snd}
 \end{figure}
 \begin{figure}[t]
     \centering
@@ -131,26 +137,27 @@ A single plot of the empirical distribution in Figure X.X is retrieved as follow
 %    \mbox{}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec1_cf_chFDexp.png}
-        \caption{Spec 1 - causal forest }
+        \caption{Spec 1 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec2_cf_chFDexp.png}
-        \caption{Spec 2 - causal forest }
+        \caption{Spec 2 - causal forest}
     \end{subfigure}\hfill
     \begin{subfigure}{0.33\linewidth}
         \includegraphics[width=\linewidth]{figures/distributions/spec3_cf_chFDexp.png}
         \caption{Spec 3 - causal forest}
     \end{subfigure}\hfill
-    \caption{Distributions of estimated MPC of chFDexp}
+    \caption{Distributions of estimated MPC - food expenditures}
+    \fnote{Blue parts show frequency of point estimates in this bin, red parts show share of these being statistically significant with $p\leq0.1$. Dotted lines signal the \textit{Average Treatment Effect}, which is only significant for.../never significant.}
+    \label{fig:dist_fd}
 \end{figure}
-\noindent In general, we find strong support for heterogeneity in the Marginal Propensity to Consume. The plots in Figure X.X show a large variation of MPCs across all consumption categories and estimation approaches. This underlines the importance of accounting for heterogeneous responses to income shocks. The heterogeneity is similar to Misra and Surico’s findings. Our results show a large mass of households having a Marginal Propensity to Consume close to 0 and for many households, we cannot reject the null hypothesis of a zero MPC. On the other hand, there is a smaller share of households that show strong, significant responses. Table depicts the shares of significant MPCs we estimate for each specification and model when we look at changes in non-durable consumption.\footnote{Significance shares for the other three main outcomes discussed in this section are reported in Appendix A.A.} \\
+\noindent In general, we find strong support for heterogeneity in the Marginal Propensity to Consume. The plots in Figures \ref{fig:dist_tot} to \ref{fig:dist_fd} show a large variation of MPCs across all consumption categories and estimation approaches. This underlines the importance of accounting for heterogeneous responses to income shocks. The heterogeneity is similar to Misra and Surico’s findings. Our results show a large mass of households having a Marginal Propensity to Consume close to 0 and for many households, we cannot reject the null hypothesis of a zero MPC. On the other hand, there is a smaller share of households that show strong, significant responses. Table depicts the shares of significant MPCs we estimate for each specification and model when we look at changes in non-durable consumption.\footnote{Significance shares for the other three main outcomes discussed in this section are reported in Appendix \ref{app:sig_shares}.} \\
 Meanwhile, the ATE is very close to zero in all expenditure categories (except TOT) and across all estimations the bin it falls into never contains more than 15\% of all point estimates. This highlights the weak representativeness of the ATE and its inability to reliably assess the success of programs such as the 2008 tax stimulus. Accounting for heterogeneity reveals positive effects of the stimulus program on household spending that far exceed the average responses. \\
 Taking a look at the measure of interest, the conditional average treatment effect, the similarity of our results to Misra and Surico's depends on our specification and choice of estimator. Using the linear DML, we find similar results across all expenditure categories in specification 1, which includes the same set of controls as their estimation. The most significant MPCs for ND, SND, and FD goods are between 0.5 and 1; however, our point estimates for changes in total expenditure are largely exceeding the estimates presented by Misra and Surico. In general, the TOT responses are very strong and, in part, exceeding 1. The causal forest adapts quite more strongly to individual level heterogeneities, potentially driven by subtle variations in non-linear interactions between households’ characteristics. \\
-With respect to total consumption, we find a very wide distribution of MPCs with ranges varying across estimators and specifications. In general, it becomes obvious that the causal forest picks up even more heterogeneous patterns as we observe a more narrow distribution of point estimates using the linear DML. \textbf{move to another part: Turning our attention to specification 3, which includes liquidity, salary and income, any negative MPCs we find in the other two specifications are no longer existing.} However, we observe the significance shares reduce drastically comparing the linear DML to the causal forest based approach. This might be attributed to the amount of observations we are capable of using. Non-parametric regressors such as the Causal Forest converge slower and are more data-intensive. Still, the significant estimates we find point to the causal forest estimator picking up non-linearities in the CATE $\theta(X)$ that are ignored by the linear approach. \\
-In case of Non-Durables - and as becomes visible in Figure X.X also for Strictly Non-Durables - we observe similar effects when it comes to controlling for liquidity and the changes in significance between the linear and causal forest estimator. However, the estimates we find across all specifiations are more reasonable than for the TOT consumption category. As Parker et al. and Misra and Surico argue, this is due to a small subset of households consuming large amounts in the new vehicle category in the same quarter they receive their rebate check. These households therefore experience an extreme change in consumption and we find these large estimates of MPCs. Exlcuding these consumption categories reduces the amount of outliers we observe. \\
-In case of specification 2 we see that also controlling for the marital status of households, the significant MPCs are slightly wider disbursed and especially in the linear CATE we see the MPC showing an almost bi-modal distribution centred around a positive and negative amount. Still, including liquidity relaxes this effect a lot, which highlights that marital status as well captures effects that are driven by salary, income or liquid assets.\\ 
-An important observation is the fact that once we control for liquidity, the linear DML picks up no significant responses in the ND and SND categories of consumption. Moreover, any negative MPCs we find in the previous two specifications vanish. This hints to a negative bias induced by leaving out the \textit{financial status} variables in specifications 1 and 2. We address the occurrence of negative MPCs further below and our more detailed analysis of the drivers of the estimated responses in Section \ref{sec:roots_of_heterogeneity} yields more insights. This further underlines that the causal forest estimator detects non-linear heterogeneities that are not uncovered by the linear CATE. We observe that the described dynamics hold for the SND category as well although we see slighlty smaller ranges of MPCs. \\
-Briefly touching upon reactions in the food consumption category, we see a pattern that is distinct from the ones we discuss above. Contrary to a wide distribution of MPCs in the more aggregate categories, food consumption reveals a bi-modal looking pattern of MPCs where some households show small positive and another set shows small negative reactions. The negative spike vanishes once we control for the \textit{financial status}, a phenomenon that we observe across all consumption categories and we address further below. \\
-Summarizing, our baseline results suggest that the 2008 tax rebate was used to increase consumption by a specific set of households. Contrary to the estimated average effect, these MPCs are statistically significant and are, in part, also exceeding ranges present in the literature so far. Again, we want to underline that these estimates provide evidence for a heterogeneous MPC that can be driven by a multitude of factors. \\
+With respect to total consumption, we find a very wide distribution of MPCs with ranges varying across estimators and specifications. In general, it becomes obvious that the causal forest picks up even more heterogeneous patterns as we observe a more narrow distribution of point estimates using the linear DML. However, we observe the significance shares reduce drastically comparing the linear DML to the causal forest based approach. This might be attributed to the amount of observations we are capable of using. Non-parametric regressors such as the \textit{Causal Forest} converge slower and are more data-intensive. Still, the significant estimates we find point to the causal forest estimator picking up non-linearities in the CATE $\theta(X)$ that are ignored by the linear approach. \\
+In case of Non-Durables (Figure \ref{fig:dist_nd}) - and as becomes visible in Figure \ref{fig:dist_snd} also for Strictly Non-Durables - we observe similar effects when it comes to controlling for liquidity and the changes in significance between the linear and causal forest estimator. However, the estimates we find across all specifiations are more reasonable than for the TOT consumption category. As Parker et al. and Misra and Surico argue, this is due to a small subset of households consuming large amounts in the new vehicle category in the same quarter they receive their rebate check. These households therefore experience an extreme change in consumption and we find these large estimates of MPCs. Exlcuding these consumption categories reduces the amount of outliers we observe. \\
+In case of specification 2 we see that also controlling for the marital status of households, the significant MPCs are slightly wider disbursed and especially in the linear CATE we see the MPC showing an almost bi-modal distribution centred around a positive and negative amount. Still, including liquidity relaxes this effect a lot, which highlights that marital status as well captures effects that are driven by salary, income or liquid assets. \\ 
+An important observation is the fact that once we control for liquidity, the linear DML picks up no significant responses in the ND and SND categories of consumption (Figures \ref{fig:dist_nd} and \ref{fig:dist_snd}). Moreover, any negative MPCs we find in the previous two specifications vanish. This hints to a negative bias induced by leaving out the \textit{financial status} variables in specifications 1 and 2. This further underlines that the causal forest estimator detects non-linear heterogeneities that are not uncovered by the linear CATE. We observe in Figure \ref{fig:dist_snd} that the described dynamics hold for the SND category as well although we see slighlty smaller ranges of MPCs. We address the occurrence of negative MPCs further below and our more detailed analysis of the drivers of the estimated responses in Section \ref{sec:roots_of_heterogeneity} yields more insights. \\
+Briefly touching upon reactions in the food consumption category, Figure \ref{fig:dist_fd} reveals as pattern that is distinct from the ones we discuss above. Contrary to a wide distribution of MPCs in the more aggregate categories, food consumption reveals a bi-modal looking pattern of MPCs where some households show small positive and another set shows small negative reactions. The negative spike vanishes once we control for the \textit{financial status}, a phenomenon that we observe across all consumption categories and we address further below. \\
 Lastly, we want to address the negative MPCs we find throughout almost all estimations. The MPC is bounded by zero at its lower bound by the definition of the concept. However, in our setting, negative estimates are still possible, as Kaplan and Violante point out. This relates back to their argument that when using the tax stimulus, we estimate a 'rebate coefficient' and not necessarily the MPC. However, the rebate coefficient can very well be negative, as they show in estimations using their calibrated two-asset model. In their model, they explain the heterogeneous response to the 2001 US tax stimulus by distinciting between hosueholds that are welathy but only hold illiquid assets (wealthy hand-to-mouth) and households that have no liquidity and hold no illiquid assets (poor hand-to-mouth). In this two-asset model, the households holding illiquid assets have to pay transaction costs to increase their holdings of the illiquid asset. Kaplan and Violante show that when these transaction costs are relatively low compared to the size of the income shock, households will choose to pay the costs and make a deposit once they receive the payment resulting in a negative effect on contemporaneous consumption. In our case, once we control for liquidity, we observe a reduction in the significantly negative MPCs and in part see them completely vanish. Staying in Kaplan and Violante's framework, it is possible that their described effect is captured by the liquidity related variables as a proxy. We have no measure of illiquid holdings but the variables additionally included in specification 3 might act as kind of a proxy, accounting for this illiquid asset effect on consumption change. \\
-Overall, our results hint to a small amount of households showing a significant consumption response to the tax stimulus payments. Next, we investigate what these responses are driven by.
+Summarizing, our baseline results suggest that the 2008 tax rebate was used to increase consumption by a specific set of households. Contrary to the estimated average effect, these MPCs are statistically significant and are, in part, also exceeding ranges present in the literature so far. Again, we want to underline that these estimates provide evidence for a heterogeneous MPC that can be driven by a multitude of factors. Next, we investigate what these factors might be.
