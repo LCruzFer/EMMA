@@ -5,7 +5,11 @@
 \begin{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Title 
+%renew footnote command for title page 
+\renewcommand{\thefootnote}{\fnsymbol{footnote}} 
 \include{coverpage_w_infos}
+%change back to roman numbers
+\renewcommand{\thefootnote}{\arabic{footnote}} 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Introduction & Motivation
@@ -40,11 +44,17 @@
 \clearpage
 \small
 \bibliographystyle{ecta}
-\bibliography{references}
+\bibliography{09references}
 \newpage 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Affidavit
+\input{11affidavit.tex}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Appendix
 \input{10appendix}
+
 
 \end{document}
