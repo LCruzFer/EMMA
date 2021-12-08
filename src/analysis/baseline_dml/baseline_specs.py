@@ -15,8 +15,9 @@ wd=Path.cwd()
 sys.path.append(str(wd.parent))
 from utils import data_utils
 from utils import fitDML
-#import ALEPython.src.alepython as ale_dml
+
 from ALEPython.src.alepython import ale_dml
+#import ALEPython.src.alepython as ale_dml
 
 #* set data paths
 data_in=wd.parents[2]/'data'/'in'

@@ -1,0 +1,67 @@
+\section{Methodology} \label{sec:methodology}
+To estimate the causal effect of tax rebate receipt on changes in consumption, we use the \textit{Double Machine Learning} framework developed by \cite{DML2017}. This new kind of estimation approach allows to efficiently estimate semi-parametric models of treatment effects using Machine Learning methods. The semi-parametric approach we follow has the major advantage that it does not restrict the effect of confounders on the outcome to a specific functional form. Moreover, specific DML estimators enable us to estimate heterogeneity given observables without defining in which form the observable affects the treatment effect. Past contributions that were looking into heterogeneity had to rely on choosing the correct interactions with observables. DML estimators open the door to combining powerful machine learning algorithms with causal inference, which can detect interactions and non-linearities without having to define them beforehand. Meanwhile, its implementation procedure deals with common biases arising in more naive estimation procedures that employ Machine Learning methods. \\
+From a more theoretical perspective, the DML estimator yields very efficient properties when it comes to its asymptotic behavior. \cite{DML2017} are able to prove $\sqrt{n}$ consistency of the estimator, a rate of convergence not achieved in other nonparametric approaches. However, we will not further elaborate on these details and refer the reader to \cite{DML2017} for a more technical discussion. Instead, we focus on the general idea behind the DML framework and the different estimation methods we use in our analysis.
+
+\subsection{Setup} \label{sec:dml-idea}
+We start with considering a \textit{Partially Linear Model} of treatment and outcome 
+\begin{align}
+    Y_{it}&=\theta(X_{it})D_{it}+g(X_{it}, W_{it})+\epsilon_{it} \label{eq:plm1}\\
+    D_{it}&=h(X_{it}, W_{it})+u_{it}, \label{eq:plm2}
+\end{align}
+where $Y_{it}$ is the outcome, $D_{it}$ is the treatment and $X_{it}$ and $W_{it}$ are observable variables. We distinct between simple confounders $W_{it}$ which affect the outcome and also potentially the treatment and $X_{it}$, which additionally are considered to impact the treatment effect of $D_{it}$ on $Y_{it}$. Further, we assume that $E[\epsilon_{it}|X_{it}, W_{it}]=0$ and $E[u_{it}|X_{it}, W_{it}]=0$. \\ 
+We are interested in $\theta(X)$, the \textit{Conditional Average Treatment Effect} (CATE). In Rubin's (XXXX) potential outcomes framework (\textbf{citation missing}) it is defined as 
+\begin{align*}
+    \theta(X)=E[Y_1 - Y_0 | X=x]
+\end{align*}
+where $Y_d$ is the outcome when treatment is $D=d$. In our setting, where treatment is not binary, $\theta(X)$ represents the marginal CATE
+\begin{align*}
+    \theta(X)=E\left[\frac{\delta Y(d)}{\delta d} \bigg| X=x\right].
+\end{align*}
+The marginal CATE measures how much a marginal increase in the continuous treatment changes the outcome for individuals that have a set of characteristics $X=x$. Note that in our setting, we assume that the CATE is linear in treatment, i.e., the treatment effect is independent of the size of the treatment. The task is now to find an appropriate estimator ${\theta}(X_{it})$.
+
+\subsection{Regularization bias and how to get rid of it - alternative title: A quest to avoid biases}
+As \cite{DML2017} point out, we could come up with some seemingly straightforward approach to estimate the PLM using machine learning methods. For example, approximating the function $g(X, W)$ with a high polynomial and using a Lasso regression for regularization or using a combination of random forests for predicting $g(X, W)$ and then an OLS regression to find $\theta(X)$. However, any machine learning-based approach that follows this notion will suffer from a bias. To avoid overfitting and the resulting large variance of the estimator, machine learning methods deliberately induce a bias into their predictions. This bias does not vanish asymptotically, leading to inconsistent results.\footnote{See Appendix X.X (or only the paper?).} However, we can deal with this regularization bias. For this, we define 
+\begin{align}
+    E[Y_{it}|X_{it}, W_{it}] &\equiv f(X_{it}, W_{it}) \label{eq:EY_def}\\ 
+    E[D_{it}|X_{it}, W_{it}] &\equiv h(X_{it}, W_{it}) \label{eq:ED_def}
+\end{align}
+where (\ref{eq:ED_def}) follows from (\ref{eq:plm2}).\footnote{Derivations are shown in Appendix A.A.}. It is straightforward to estimate these conditional means using any machine learning method of choice, which is the first stage of the DML framework. Using (\ref{eq:EY_def}), (\ref{eq:ED_def}) and the PLM defined above, we can find 
+\begin{align}
+    Y_{it}-f(X_{it}, W_{it})=\theta(X_{it})(D_{it}-h(X_{it}, W_{it})) + \epsilon_{it}. \label{eq:maineq_ortho}
+\end{align}
+Subtracting the conditional means from $Y$ and $D$ is known as orthogonalization and removes the impact of $X$ and $W$, respectively. The residuals then only contain variation that does not stem from any of the confounders. In Section \ref{subsec:identification} we discuss what this means in our setting in more detail. The estimate of $\theta(X)$ retrieved from  estimating the orthogonalized PLM in (\ref{eq:maineq_ortho}) is no longer suffering from the regularization bias. Excitingly, \cite{DML2017} are able to prove that even in case that the first stage estimators - $\hat{f}$ and $\hat{h}$ - are converging at slower rates than root-n to the true parameter value, in the final estimator the regularization bias converges and the estimation error converges to zero at a potential rate of root-n. \\
+In practice, the first stage of the estimation process consists of choosing an appropriate Machine Learning method, predicting the conditional expectation functions $f$ and $h$ and calculating residuals 
+\begin{align*} 
+    \tilde{Y}_{it}&=Y_{it}-\hat{f}(X_{it}, W_{it}) \\ 
+    \tilde{D}_{it}&=D_{it}-\hat{h}(X_{it}, W_{it}).
+\end{align*}
+A welcome property of the DML estimation is its agnostic to the first stage estimator. To retrieve $\hat{f}$ and $\hat{h}$ we can choose the appropriate prediction method for the given setting. 
+
+\subsection{Cross- against Overfitting} \label{sec:cross-fitting}
+While orthogonalization takes care of the regularization bias plaguing more naive ML-based estimators, it implicitly induces a new bias. Machine Learning estimators are prone to overfitting models. Instead of picking up signals in features to predict the outcome, they start interpreting noise in the training data we feed them. To avoid this behavior, one can tune hyperparameters of the algorithm of choice to minimize this issue. Still, it is not unlikely that noise in the data is interpreted as a signal. \\
+This same individual level noise is contained in the structural error terms of the PLM, $\epsilon_{it}$ and $u_{it}$. Thus, our predictions of $f$ and $h$ are not independent of these. \textbf{Using the orthogonalized outcomes and treatments to estimate $\theta(X)$ then leads to terms such as $u_{it}(\hat{f}(X_{it}, W_{it}) - f(X_{it}, W_{it})$ to show up in the estimation error $\hat{\theta}(X) - \theta(X)$. - UGLY} The dependence of the structural errors and the prediction errors - both driven by the individual level noise - are then not vanishing asymptotically. Similar to the regularization bias, this lets the asymptotic variance of the estimator explode and prohibits any convergence. However, it is rather easy to resolve this issue using sample splitting - a procedure called "crossfitting." \\ 
+Instead of using all observations to find the estimates of $f$ and $h$ and then estimate $\theta(X)$ using the whole sample, consider the case in which we split the sample into two. The first sample is used to retrieve the first stage predictions. Those are used to predict the conditional means of the second sample, which are then subsequently used for orthogonalization and the second stage estimation. Since noise is independent across individuals, the noise affecting the first stage prediction error and the structural errors coming into play in the second stage estimation are independent as well. It is then easy to show that terms leading to problems when using the whole sample are vanishing asymptotically. In case we are interested in the unconditional average treatment effect (ATE), this procedure is repeated with the role of the samples reversed and the resulting estimators averaged. However, in the CATE case, we are interested in individual-level point estimates. Therefore, while the role of both samples is switched, we do not average any results but keep the individual-level estimates of all observations. The cross-fitting procedure for splitting up the sample into any K folds is described in Algorithm 1, which summarizes the whole DML estimation procedure.\footnote{Note that \cite{DML2017} argue that K=4 or K=5 performs reasonably well, even for smaller samples.} 
+
+\subsection{Retrieving the CATE}
+After retrieving the residualized outcome and treatment, the second stage estimates the conditional average treatment effect as defined in (\ref{eq:CATE}). It takes the following form
+\begin{align} 
+    \theta(X)=\phi(X) \times \Theta, \label{eq:CATE}
+\end{align} 
+where $\Theta$ is the baseline treatment effect of each individual and $\phi(X)$ is a mapping of our controls $X$. The form of the latter depends on the estimator chosen for the second stage. In \cite{DML2017} estimators are proposed which have a linear second stage, either using a standard OLS estimator or Lasso to regress $\tilde{Y}_{it}$ on $\tilde{D}_{it}$. In these cases, the second stage boils down to a linear regression in which the residualized outcome is regressed on interactions $\tilde{D}_{it}$ and each element of $X_{it}$. This implies that the treatment effect we estimate is linear in the covariates $X$. It is also possible to include polynomials of or interactions between different elements of $X_{it}$. However, we choose a simple linear mapping of $X$ for our linear DML approach presented in Section \ref{sec:estim_res}. \\
+To identify nonlinearities in the CATE, we use a nonparametric approach that allows us to uncover these without defining them beforehand. Namely, we use a \textit{Generalized Random Forest} estimator introduced by Athey et al. (2018). It has been developed to take advantage of the powerful random forest predictor for causal inference. Similar to DML, the GRF is an estimation framework. The GRF replaces the original objective function of the random forest algorithm (Breiman, 2001) with a moment condition containing some loss function that can be defined by the researcher. When using it for moment conditions such as (\ref{eq:cfmomcond}) to identify conditional average treatment effects, the GRF is also known as a \textit{Causal Forest}, which is presented in earlier work by Athey and Wager (2016). It allows for causal inference as Athey et al. (2018) develop the theory that allows retrieving standard errors of the estimated coefficients. Appendix A elaborates in more detail how the Causal Forest algorithm works and how it identifies the treatment effect. In our case, the moment condition is defined as 
+\begin{align}
+    E \left[\left(\tilde{Y}- \theta(X) \times \tilde{D}_{it} - \beta(x)\right) \times (\tilde{D}_{it}; 1) \right] = 0 \label{eq:cfmomcond}
+\end{align}
+where we choose the CATE $\theta(X)$ and constants $\beta(x)$ to solve it. The causal forest non-parametrically estimates $\theta(X)$ and therefore puts no assumption on the form of the mapping $\phi(X)$. The term $(\tilde{D}_{it}; 1)$ represents a matrix consisting of the vector of orthogonalized treatments and ones to capture the constant effects. \\
+As part of our analysis we will compare the results to check whether the relationship is indeed linear or whether we discover non-linear heterogeneities that the linear DML approach does not account for and have not been considered in the literature yet. However, note that when using a nonparametric second stage the convergence rate of the estimator declines. This implies that the Causal Forest based approach is more demanding when it comes to the number of observations. 
+
+\textbf{This has to look better and be more 'algorithmic'.}
+\begin{algorithm}
+    \caption{Double Machine Learning Estimator}
+    \begin{algorithmic}[1]
+        \State Split up sample into K folds. 
+        \State To estimate $\widehat{h}$ and $\widehat{f}$ for for the $k^{th}$ fold use observations $j \notin k$. 
+        \State To get residuals for observations in $k$, calculate $\widehat{h}(X_i)$ and $\widehat{f}(X_i, W_i)$ for $i \in k$ and use to retrieve residuals.
+        \State Once residuals of each fold retrieved, estimate $\theta(X_i)$.
+    \end{algorithmic}
+\end{algorithm}

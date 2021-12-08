@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 '''
 This file contains various helper functions for that are done in several files but always involve the same steps - e.g. splitting data into train and test sets or other things.
 '''
+
 class data_utils: 
     '''
     A class containing tools for data pre-processing and manipulation.
@@ -24,7 +25,23 @@ class data_utils:
         '''
         df=df.drop([col for col in df.columns if word in col], axis=1)
         return df
-    
+
+    def create_test_train(data, outcome, treatment, n_test=2000):
+        '''
+        Create single datasets for outcome, treatment and controls - train and test sets respectively.
+        *data=df with all data 
+        *outcome=str that is column name of outcome
+        *treatment=str that is column name of treatment
+        '''
+        train, test=train_test_split(data, test_size=n_test, random_state=2021)
+        y_train=train[outcome]
+        y_test=test[outcome]
+        t_train=train[treatment]
+        t_test=test[treatment]
+        z_train=train[[col for col in train.columns if col not in [outcome, treatment]]]
+        z_test=test[[col for col in train.columns if col not in [outcome, treatment]]]
+        return y_train, y_test, t_train, t_test, z_train, z_test
+
     def get_expnames(self, df): 
         '''
         Filter self.df for all expenditure variables.
@@ -397,3 +414,25 @@ class fitDML(data_utils):
         variables=self.x_cols
         for var in variables: 
             self.ice(var, model=model)
+    '''
+    Drop all columns related to expenditures or rebate that are in df. 
+    *df=pandas df
+    '''
+    df=df[[col for col in df.columns if 'exp' not in col]]
+    df=df[[col for col in df.columns if 'rbt' not in col]]
+    df=df[[col for col in df.columns if 'reb' not in col]]
+    df=df[[col for col in df.columns if 'REB' not in col]]
+    df=df[[col for col in df.columns if 'RBT' not in col]]
+    return df
+
+def split_XW(Z, x_columns):
+    '''
+    Split all observables into X and W data.
+    *Z=all observables 
+    *x_columns=columns that are supposed to be in X
+    '''
+    #get x data
+    x=Z[x_columns]
+    #then get w data 
+    w=Z[[col for col in Z.columns if col not in x.columns]]
+    return (x, w)
