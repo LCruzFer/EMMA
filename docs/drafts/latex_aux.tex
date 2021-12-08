@@ -1,3 +1,5 @@
+%%%%%%%%%
+%Packages
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{natbib}
@@ -10,6 +12,14 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage[normalem]{ulem}
+%%%%%%%%%
+%Options and self-defined commands
 \DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 \geometry{a4paper, left = 25mm, right = 25mm, top = 20mm}
 \onehalfspacing
+%for notes on tables and figures
+\newcommand\fnote[1]{\captionsetup{font=footnotesize, width=.9\linewidth}\caption*{#1}}

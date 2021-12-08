@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2022/dev) (preloaded format=pdflatex 2021.8.26)  1 SEP 2021 12:02
+This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2022/dev) (preloaded format=pdflatex 2021.8.26)  5 DEC 2021 16:10
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -821,15 +821,15 @@ Package rerunfilecheck Info: File `summary0109.out' has not changed.
 (rerunfilecheck)             Checksum: 0738EAFFC648270A987AE830C3ABDE51;262.
  ) 
 Here is how much of TeX's memory you used:
- 22289 strings out of 478542
- 410480 string characters out of 5850387
+ 22280 strings out of 478542
+ 410225 string characters out of 5850387
  702122 words of memory out of 5000000
- 39712 multiletter control sequences out of 15000+600000
+ 39703 multiletter control sequences out of 15000+600000
  412733 words of font info for 60 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  128i,15n,124p,478b,446s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmss12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmss17.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi12.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi8.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on summary0109.pdf (9 pages, 124305 bytes).
+Output written on summary0109.pdf (9 pages, 123603 bytes).
 PDF statistics:
  146 PDF objects out of 1000 (max. 8388607)
  104 compressed objects within 2 object streams
