@@ -414,25 +414,15 @@ class fitDML(data_utils):
         variables=self.x_cols
         for var in variables: 
             self.ice(var, model=model)
-    '''
-    Drop all columns related to expenditures or rebate that are in df. 
-    *df=pandas df
-    '''
-    df=df[[col for col in df.columns if 'exp' not in col]]
-    df=df[[col for col in df.columns if 'rbt' not in col]]
-    df=df[[col for col in df.columns if 'reb' not in col]]
-    df=df[[col for col in df.columns if 'REB' not in col]]
-    df=df[[col for col in df.columns if 'RBT' not in col]]
-    return df
 
-def split_XW(Z, x_columns):
-    '''
-    Split all observables into X and W data.
-    *Z=all observables 
-    *x_columns=columns that are supposed to be in X
-    '''
-    #get x data
-    x=Z[x_columns]
-    #then get w data 
-    w=Z[[col for col in Z.columns if col not in x.columns]]
-    return (x, w)
+    def split_XW(Z, x_columns):
+        '''
+        Split all observables into X and W data.
+        *Z=all observables 
+        *x_columns=columns that are supposed to be in X
+        '''
+        #get x data
+        x=Z[x_columns]
+        #then get w data 
+        w=Z[[col for col in Z.columns if col not in x.columns]]
+        return (x, w)
